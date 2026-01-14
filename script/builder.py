@@ -3,6 +3,7 @@ import requests
 import copy
 import yaml
 import os
+import time
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 
@@ -11,17 +12,20 @@ UPSTREAM_URL = "https://rules2.clearurls.xyz/data.minify.json"
 OUTPUT_DIR = "rules"
 UPSTREAM_FILE = os.path.join(OUTPUT_DIR, "upstream_rules.json")
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "merged_rules.json")  # 人类可读版
-MINIFIED_FILE = os.path.join(OUTPUT_DIR, "rules_min.json")  # 插件专用版(压缩)
+MINIFIED_FILE = os.path.join(OUTPUT_DIR, "rules.min.json")  # 插件专用版(压缩)
 LOG_FILE = os.path.join(OUTPUT_DIR, "merge_log.txt")
 CUSTOM_FILE = "custom_rules.yaml"
 
 # 定义北京时区 (UTC+8)
 CN_TZ = timezone(timedelta(hours=8))
+
+# 特殊标记：全删
+KEYWORD_DELETE_ALL = "DELETE_ENTIRE_ARRAY"
 # ===========================================
 
 DEFAULT_PROVIDER = {
     "urlPattern": "",
-    "completeProvider": True,
+    "completeProvider": True,  # 初始默认值，后续会根据规则存在与否自动覆盖
     "rules": [],
     "referralMarketing": [],
     "rawRules": [],
@@ -76,7 +80,6 @@ def ensure_dir(directory):
 
 def normalize_to_list(value):
     if isinstance(value, str):
-        # 替换逗号为空格 -> 切分 -> 去除每项两端的引号
         items = value.replace(",", " ").split()
         return [item.strip("\"'") for item in items]
     if isinstance(value, list):
@@ -108,16 +111,12 @@ def fetch_upstream(logger):
     try:
         r = requests.get(UPSTREAM_URL)
         r.raise_for_status()
-
         raw_date = r.headers.get("Last-Modified")
         formatted_date = format_http_date(raw_date)
-
         data = r.json()
-
         logger.log(f"[-] Saving upstream backup to {UPSTREAM_FILE}...")
         with open(UPSTREAM_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
-
         return data, formatted_date
     except Exception as e:
         logger.log(f"[!] Error fetching upstream: {e}")
@@ -127,11 +126,9 @@ def fetch_upstream(logger):
 def load_custom(logger):
     logger.log(f"[-] Loading custom rules from {CUSTOM_FILE}...")
     custom_ts = get_file_mtime(CUSTOM_FILE)
-
     if not os.path.exists(CUSTOM_FILE):
         logger.warn("[!] No custom rules file found.")
         return {}, custom_ts
-
     with open(CUSTOM_FILE, "r", encoding="utf-8") as f:
         return (yaml.safe_load(f) or {}), custom_ts
 
@@ -145,19 +142,14 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
 
     if section_name == "add-providers":
         if exists:
-            logger.warn(
-                f"    [WARN] Duplicate Add: '{name}' already exists in upstream. Applying as Merge."
-            )
-            action_type = "Merge (Duplicate Add)"
+            logger.warn(f"    [WARN] Duplicate Add: '{name}' exists. Merging changes.")
+            action_type = "Merge (Add->Mod)"
         else:
             action_type = "Create"
-
     elif section_name == "modify-providers":
         if not exists:
-            logger.warn(
-                f"    [WARN] Missing Modify: '{name}' not found in upstream. Applying as Create."
-            )
-            action_type = "Create (Missing Modify)"
+            logger.warn(f"    [WARN] Missing Modify: '{name}' missing. Creating new.")
+            action_type = "Create (Mod->Add)"
             providers[name] = copy.deepcopy(DEFAULT_PROVIDER)
         else:
             action_type = "Modify"
@@ -171,35 +163,63 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
     target = providers[name]
 
     for field, value in patch_data.items():
-        if field in ARRAY_FIELDS or field.startswith("del-"):
-            value = normalize_to_list(value)
+        # 预处理
+        value_list = []
+        is_array = False
+        target_field_name = field
 
-        if field.startswith("del-"):
-            target_field = field[4:]
-            if target_field in ARRAY_FIELDS:
-                original_list = target.get(target_field, [])
-
-                not_found_items = [x for x in value if x not in original_list]
-                if not_found_items:
-                    logger.warn(
-                        f"        [WARN] '{name}': Trying to delete non-existent {target_field}: {not_found_items}"
-                    )
-
-                target[target_field] = [x for x in original_list if x not in value]
-
+        if field.startswith("rst-"):
+            target_field_name = field[4:]
+            if target_field_name in ARRAY_FIELDS:
+                value_list = normalize_to_list(value)
+                is_array = True
+        elif field.startswith("del-"):
+            target_field_name = field[4:]
+            if target_field_name in ARRAY_FIELDS:
+                value_list = normalize_to_list(value)
+                is_array = True
         elif field in ARRAY_FIELDS:
+            value_list = normalize_to_list(value)
+            is_array = True
+
+        # 逻辑处理
+        if field.startswith("rst-"):
+            if is_array:
+                target[target_field_name] = sorted(list(set(value_list)))
+            else:
+                target[target_field_name] = value
+
+        elif field.startswith("del-"):
+            if is_array:
+                original_list = target.get(target_field_name, [])
+                if len(value_list) == 1 and value_list[0] == KEYWORD_DELETE_ALL:
+                    target[target_field_name] = []
+                else:
+                    not_found_items = [x for x in value_list if x not in original_list]
+                    if not_found_items:
+                        logger.warn(
+                            f"        [WARN] '{name}': Cannot delete non-existent {target_field_name}: {not_found_items}"
+                        )
+                    target[target_field_name] = [
+                        x for x in original_list if x not in value_list
+                    ]
+
+        elif is_array:
             original_list = target.get(field, [])
             new_set = set(original_list)
-            new_set.update(value)
+            new_set.update(value_list)
             target[field] = sorted(list(new_set))
 
         else:
+            # 标量覆盖
             target[field] = value
 
+    # --- 自动判断 completeProvider (核心修改) ---
+    # 逻辑：如果有任何过滤规则，则不是 completeProvider (False)
+    #      如果没有任何过滤规则，则是 completeProvider (True)
     if "completeProvider" not in patch_data:
         has_rules = any(len(target.get(f, [])) > 0 for f in RULE_FIELDS)
-        if has_rules:
-            target["completeProvider"] = False
+        target["completeProvider"] = not has_rules
 
 
 def process_rules(upstream_data, custom_data, logger):
@@ -241,15 +261,16 @@ def minify_data(data):
         if "urlPattern" in provider:
             mini["urlPattern"] = provider["urlPattern"]
 
-        # 2. completeProvider: 如果是 False，剔除 (保留 True)
+        # 2. completeProvider (核心修改)
+        # 逻辑：默认为 False (不写)。只有当它是 True 时，才写入。
         if provider.get("completeProvider") is True:
             mini["completeProvider"] = True
 
-        # 3. forceRedirection: 如果是默认 False，剔除 (保留 True)
+        # 3. forceRedirection: 默认 False (不写)。只有 True 才写入。
         if provider.get("forceRedirection") is True:
             mini["forceRedirection"] = True
 
-        # 4. 数组字段: 如果为空，剔除
+        # 4. 数组字段: 如果有值才写入
         for key in ARRAY_FIELDS:
             val = provider.get(key)
             if val and len(val) > 0:
@@ -261,18 +282,16 @@ def minify_data(data):
 
 
 def save_output(data, logger):
-    # 1. 保存 Pretty 版本 (Merged Rules)
     logger.log(f"[-] Saving merged rules to {OUTPUT_FILE}...")
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
-    # 2. 保存 Minified 版本 (Rules.min.json)
     logger.log("[-] Generating minified rules...")
     minified_data = minify_data(data)
 
     logger.log(f"[-] Saving minified rules to {MINIFIED_FILE}...")
     with open(MINIFIED_FILE, "w", encoding="utf-8") as f:
-        # separators=(',', ':') 移除所有不必要的空格
+        # separators=(',', ':') 移除 JSON 中所有的空格
         json.dump(
             minified_data, f, indent=None, separators=(",", ":"), ensure_ascii=False
         )
@@ -280,16 +299,11 @@ def save_output(data, logger):
 
 if __name__ == "__main__":
     ensure_dir(OUTPUT_DIR)
-
     logger = MergeLogger()
-
     upstream, upstream_ts = fetch_upstream(logger)
     custom, custom_ts = load_custom(logger)
-
     logger.header(upstream_ts, custom_ts)
-
     final_data = process_rules(upstream, custom, logger)
     save_output(final_data, logger)
-
     logger.save()
     print(f"[ok] Log saved to {LOG_FILE}")

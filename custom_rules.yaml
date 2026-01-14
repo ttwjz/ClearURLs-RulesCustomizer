@@ -61,23 +61,37 @@ add-providers:
 # ------------------------------------------
 # 3. 修改列表：用于调整上游已有的规则
 # (注：如果这里写的规则在上游里其实不存在，脚本会自动按新增逻辑创建，不会报错)
+# 默认参数名表示追加模式，rst-前缀表示覆盖模式，del-前缀表示删除给出的值
+# 特别的，当 del-前缀，且值 = DELETE_ENTIRE_ARRAY 时，删除整个数组值
 # 格式举例：
 #
 # modify-providers:
 #   google:
 #     urlPattern:                 # 单个正则表达式，填写则覆盖
-#     completeProvider: True,     # bool，填写则覆盖，默认由脚本自动判断生成
-#     rules: [],                  # 数组，正则表达式，允许留空，默认留空
-#     referralMarketing: [],      # 数组，正则表达式，允许留空，默认留空
-#     rawRules: [],               # 数组，正则表达式，允许留空，默认留空
-#     exceptions: [],             # 数组，正则表达式，允许留空，默认留空
-#     redirections: [],           # 数组，正则表达式，允许留空，默认留空
-#     forceRedirection: False,    # bool，默认 False
+#     completeProvider: True,     # bool，默认由脚本自动判断生成，覆盖，
+#     rules: [],                  # 数组，正则表达式，允许留空，默认留空，追加
+#     del-rules: [],              # 数组，正则表达式，允许留空，默认留空，删除
+#     rst-rules: [],              # 数组，正则表达式，允许留空，默认留空，覆盖
+#     referralMarketing: [],      # 数组，正则表达式，允许留空，默认留空，追加
+#     del-referralMarketing: [],  # 数组，正则表达式，允许留空，默认留空，删除
+#     rst-referralMarketing: [],  # 数组，正则表达式，允许留空，默认留空，覆盖
+#     rawRules: [],               # 数组，正则表达式，允许留空，默认留空，追加
+#     del-rawRules: [],           # 数组，正则表达式，允许留空，默认留空，删除
+#     rst-rawRules: [],           # 数组，正则表达式，允许留空，默认留空，覆盖
+#     exceptions: [],             # 数组，正则表达式，允许留空，默认留空，追加
+#     del-exceptions: [],         # 数组，正则表达式，允许留空，默认留空，删除
+#     rst-exceptions: [],         # 数组，正则表达式，允许留空，默认留空，覆盖
+#     redirections: [],           # 数组，正则表达式，允许留空，默认留空，追加
+#     del-redirections: [],       # 数组，正则表达式，允许留空，默认留空，删除
+#     rst-redirections: [],       # 数组，正则表达式，允许留空，默认留空，覆盖
+#     forceRedirection: False,    # bool，默认 False，覆盖
 #
 #   baidu:
 #     urlPattern:
 #     rules: >
 #       sa, usm, f, issp, bs, oq, fr
+#     del-rules: >
+#       tbs
 #
 # ------------------------------------------
 modify-providers:

@@ -1,9 +1,9 @@
 ========================================
          ClearURLs Merge Log
 ========================================
-Execution Time   : 2026-01-14 22:58:04 (CST)
+Execution Time   : 2026-01-14 23:31:59 (CST)
 Upstream Modified: 2025-07-27 21:05:30
-Custom Modified  : 2026-01-14 22:56:50
+Custom Modified  : 2026-01-14 23:23:17
 ----------------------------------------
 
 [-] Fetching upstream from https://rules2.clearurls.xyz/data.minify.json...
@@ -15,4 +15,4 @@ Custom Modified  : 2026-01-14 22:56:50
     [Modify] google
 [-] Saving merged rules to rules\merged_rules.json...
 [-] Generating minified rules...
-[-] Saving minified rules to rules\rules_min.json...
+[-] Saving minified rules to rules\rules.min.json...
