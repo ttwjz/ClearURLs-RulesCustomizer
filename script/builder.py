@@ -3,20 +3,19 @@ import requests
 import copy
 import yaml
 import os
-import hashlib  # 新增：用于计算 hash
+import hashlib
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 
 # ================= 配置区域 =================
-# 上游地址更新
 UPSTREAM_URL = "https://rules2.clearurls.xyz/data.minify.json"
 UPSTREAM_HASH_URL = "https://rules2.clearurls.xyz/rules.minify.hash"
 
 OUTPUT_DIR = "rules"
 UPSTREAM_FILE = os.path.join(OUTPUT_DIR, "upstream_rules.json")
-OUTPUT_FILE = os.path.join(OUTPUT_DIR, "merged_rules.json")  # 人类可读版
-MINIFIED_FILE = os.path.join(OUTPUT_DIR, "rules.min.json")  # 插件专用版(压缩)
-MINIFIED_HASH_FILE = os.path.join(OUTPUT_DIR, "rules.min.hash")  # 插件专用版(Hash)
+OUTPUT_FILE = os.path.join(OUTPUT_DIR, "merged_rules.json")
+MINIFIED_FILE = os.path.join(OUTPUT_DIR, "rules.min.json")
+MINIFIED_HASH_FILE = os.path.join(OUTPUT_DIR, "rules.min.hash")
 LOG_FILE = os.path.join(OUTPUT_DIR, "merge_log.txt")
 CUSTOM_FILE = "custom_rules.yaml"
 
@@ -82,17 +81,29 @@ def ensure_dir(directory):
         os.makedirs(directory)
 
 
+def fix_regex_string(val):
+    """
+    核心修复：解决 YAML 中双反斜杠被识别为两个字符的问题。
+    将 YAML 里的 '\\' (两个字符) 还原为 '\' (一个字符)。
+    这样 JSON dump 时会把它转义回 '\\'，而不是 '\\\\'。
+    """
+    if isinstance(val, str):
+        return val.replace("\\\\", "\\")
+    return val
+
+
 def normalize_to_list(value):
     if isinstance(value, str):
         items = value.replace(",", " ").split()
-        return [item.strip("\"'") for item in items]
+        # 去引号 + 修复双重转义
+        return [fix_regex_string(item.strip("\"'")) for item in items]
     if isinstance(value, list):
-        return value
+        # 列表里的项也要修复
+        return [fix_regex_string(item) for item in value]
     return []
 
 
 def calculate_sha256(content_bytes):
-    """计算 bytes 的 SHA256"""
     return hashlib.sha256(content_bytes).hexdigest()
 
 
@@ -118,21 +129,18 @@ def get_file_mtime(filepath):
 def fetch_upstream(logger):
     logger.log(f"[-] Fetching upstream from {UPSTREAM_URL}...")
     try:
-        # 1. 下载 JSON
         r = requests.get(UPSTREAM_URL)
         r.raise_for_status()
-        json_bytes = r.content  # 获取二进制内容用于 hash 计算
+        json_bytes = r.content
         data = r.json()
         raw_date = r.headers.get("Last-Modified")
         formatted_date = format_http_date(raw_date)
 
-        # 2. 下载 Hash
         logger.log(f"[-] Fetching upstream hash from {UPSTREAM_HASH_URL}...")
         r_hash = requests.get(UPSTREAM_HASH_URL)
         r_hash.raise_for_status()
         upstream_hash = r_hash.text.strip()
 
-        # 3. 校验
         local_hash = calculate_sha256(json_bytes)
         if local_hash != upstream_hash:
             raise Exception(
@@ -141,7 +149,6 @@ def fetch_upstream(logger):
 
         logger.log("    [Check] Upstream hash verified successfully.")
 
-        # 4. 保存备份
         logger.log(f"[-] Saving upstream backup to {UPSTREAM_FILE}...")
         with open(UPSTREAM_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
@@ -196,6 +203,7 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
         is_array = False
         target_field_name = field
 
+        # 判断是否为数组操作
         if field.startswith("rst-"):
             target_field_name = field[4:]
             if target_field_name in ARRAY_FIELDS:
@@ -215,7 +223,8 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
             if is_array:
                 target[target_field_name] = sorted(list(set(value_list)))
             else:
-                target[target_field_name] = value
+                # 标量覆盖 (如 rst-urlPattern，也要修复转义)
+                target[target_field_name] = fix_regex_string(value)
 
         elif field.startswith("del-"):
             if is_array:
@@ -234,7 +243,6 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
 
         elif is_array:
             original_list = target.get(field, [])
-            # 查重
             duplicates = [x for x in value_list if x in original_list]
             if duplicates:
                 logger.log(
@@ -246,7 +254,8 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
             target[field] = sorted(list(new_set))
 
         else:
-            target[field] = value
+            # 标量覆盖 (urlPattern 等)，应用转义修复
+            target[field] = fix_regex_string(value)
 
     if "completeProvider" not in patch_data:
         has_rules = any(len(target.get(f, [])) > 0 for f in RULE_FIELDS)
@@ -303,13 +312,11 @@ def minify_data(data):
 
 
 def save_output(data, logger):
-    # 1. 保存 merged_rules.json
     logger.log(f"[-] Saving merged rules to {OUTPUT_FILE}...")
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
-    # 2. 生成并保存 rules.min.json
-    logger.log("[-] Generating minified rules...")  # 已修复 f-string
+    logger.log("[-] Generating minified rules...")
     minified_data = minify_data(data)
 
     logger.log(f"[-] Saving minified rules to {MINIFIED_FILE}...")
@@ -318,7 +325,6 @@ def save_output(data, logger):
             minified_data, f, indent=None, separators=(",", ":"), ensure_ascii=False
         )
 
-    # 3. 计算并保存 rules.min.hash
     logger.log(f"[-] Calculating hash for {MINIFIED_FILE}...")
     with open(MINIFIED_FILE, "rb") as f:
         content_bytes = f.read()

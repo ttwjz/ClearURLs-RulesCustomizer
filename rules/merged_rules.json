@@ -105,7 +105,7 @@
         },
         "google": {
             "forceRedirection": true,
-            "urlPattern": "^https?:\\\\/\\\\/(?:[a-z0-9-]+\\\\.)*?google(?:\\\\.[a-z]{2,}){1,}",
+            "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?google(?:\\.[a-z]{2,}){1,}",
             "rules": [
                 "_u",
                 "aic",
@@ -456,7 +456,7 @@
             ]
         },
         "bing": {
-            "urlPattern": "^https?:\\\\/\\\\/(?:[a-z0-9-]+\\\\.)*?bing(?:\\\\.[a-z]{2,}){1,}",
+            "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?bing(?:\\.[a-z]{2,}){1,}",
             "rules": [
                 "CREA",
                 "FORM",
