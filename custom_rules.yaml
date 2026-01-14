@@ -4,41 +4,82 @@
 
 # ------------------------------------------
 # 1. 删除列表：这里的厂商会从原始规则中彻底移除
+# 格式举例：
+#
+# del-providers: >
+#   A, B, C D
+#   E  F
+#
+# 可以使用 '-' 开头的标准列表，或原生 Flow Style [A, B, C]
+# 或使用折叠块 > , 可以以任意空格或换行或英文逗号 ',' 分隔参数值，下所有填写数组的位置相同
 # ------------------------------------------
 del-providers: >
-  doubleclick, 247-inc,
-  ad-connect
-  another-bad-site, example-com
 
 # ------------------------------------------
 # 2. 新增列表：用于添加上游没有的规则
-# (注：如果这里写的规则在上游里其实已经存在，脚本会自动按"修改"逻辑合并，不会报错)
+# (注：如果这里写的规则在上游里其实已经存在，脚本会自动按修改逻辑合并，不会报错)
+# 支持的参数与原规则相同，允许只给出修改的参数，未给出的参数将填充默认值
+# 格式举例：
+#
+# add-providers:
+#   google:
+#     urlPattern:                 # 单个正则表达式，必须填写
+#     completeProvider: True,     # bool，默认由脚本自动判断生成
+#     rules: [],                  # 数组，正则表达式，允许留空，默认留空
+#     referralMarketing: [],      # 数组，正则表达式，允许留空，默认留空
+#     rawRules: [],               # 数组，正则表达式，允许留空，默认留空
+#     exceptions: [],             # 数组，正则表达式，允许留空，默认留空
+#     redirections: [],           # 数组，正则表达式，允许留空，默认留空
+#     forceRedirection: False,    # bool，默认 False
+#
+#   baidu:
+#     urlPattern:
+#     rules: >
+#       sa, usm, f, issp, bs, oq, fr
+#
 # ------------------------------------------
 add-providers:
   baidu:
     urlPattern: ^https?:\/\/(?:[a-z0-9-]+\.)*?baidu(?:\.[a-z]{2,}){1,}
+    # 分别是通用跟踪, rsv 跟踪, AJAX 参数
     rules: >
-      tn, wd, eqid,
-      ck, rsv_bp,
-      inputT
+      sa, usm, f, issp, bs, oq, fr,
 
-  example_new_site:
-    urlPattern: example\.com
-    rules: "id token"
+      rsv_bp, rsv_idx, rsv_spt, rsv_pq, rsv_t,
+      rsv_enter, rsv_dl, rsv_btype, rsv_sid,
+      rsv_sug, rsv_sug1, rsv_sug2, rsv_sug3, rsv_sug4, rsv_sug5, rsv_sug6, rsv_sug7, rsv_sug8, rsv_sug9,
+      rsv_iqid, rsv_page, rsv_n, rsv_p, rsv_did, rsv_ers,
+
+      inputT, newi, csrc, tfflag, ect, qid, fenlei, plan,
+      tn, ie, plan,
+      dyTabStr, lid, isid, prefixsug, mod, rsp, _ss, clist, hsug, f4s, csor, _cr1,
+      sugid, from, cqid, csq, ptsg, istc, ver, chk, isid,
+      srcid, group_class, pmgr_token, timestamp, signature,
+      prod, token, json, imod, sid, _t, hisdata, usegosug,
+      ch, bar, pre, p, sugsid
 
 # ------------------------------------------
 # 3. 修改列表：用于调整上游已有的规则
-# (注：如果这里写的规则在上游里其实不存在，脚本会自动按"新增"逻辑创建，不会报错)
+# (注：如果这里写的规则在上游里其实不存在，脚本会自动按新增逻辑创建，不会报错)
+# 格式举例：
+#
+# modify-providers:
+#   google:
+#     urlPattern:                 # 单个正则表达式，填写则覆盖
+#     completeProvider: True,     # bool，填写则覆盖，默认由脚本自动判断生成
+#     rules: [],                  # 数组，正则表达式，允许留空，默认留空
+#     referralMarketing: [],      # 数组，正则表达式，允许留空，默认留空
+#     rawRules: [],               # 数组，正则表达式，允许留空，默认留空
+#     exceptions: [],             # 数组，正则表达式，允许留空，默认留空
+#     redirections: [],           # 数组，正则表达式，允许留空，默认留空
+#     forceRedirection: False,    # bool，默认 False
+#
+#   baidu:
+#     urlPattern:
+#     rules: >
+#       sa, usm, f, issp, bs, oq, fr
+#
 # ------------------------------------------
 modify-providers:
-  bilibili:
-    # 追加参数
-    rules: >
-      spm_id_from vd_source
-    # 恢复误删参数
-    del-rules: >
-      callback
-
-  google:
-    # 比如我想保留 google 的 ved 参数不被清理
-    del-rules: ved
+  baidu:
+    urlPattern: ^https?:\/\/(?:[a-z0-9-]+\.)*?baidu(?:\.[a-z]{2,}){1,}

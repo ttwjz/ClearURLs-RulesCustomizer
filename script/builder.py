@@ -76,8 +76,18 @@ def ensure_dir(directory):
 
 
 def normalize_to_list(value):
+    """
+    将输入标准化为列表。
+    1. 列表: 直接返回
+    2. 字符串: 替换逗号为空格 -> 切分 -> 去除每项两端的引号
+    """
     if isinstance(value, str):
-        return value.replace(",", " ").split()
+        # 1. 逗号变空格
+        # 2. 按空白切分
+        items = value.replace(",", " ").split()
+        # 3. 去除每一项两端的单引号和双引号
+        return [item.strip("\"'") for item in items]
+
     if isinstance(value, list):
         return value
     return []
