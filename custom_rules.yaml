@@ -1,0 +1,33 @@
+# ==========================================
+# ClearURLs 自定义规则配置
+# ==========================================
+
+# 1. 黑名单：这里的厂商规则会从原始列表中完全删除
+blocklist: >
+  doubleclick
+  247-inc
+
+# 2. 规则定制：新增或修改
+providers:
+  # --- 示例 A: 修改现有规则 (B站) ---
+  bilibili:
+    # 追加要移除的参数 (使用 > 符号支持多行/空格分隔，无需引号和逗号)
+    rules: >
+      spm_id_from
+      vd_source
+      share_source share_medium
+      timestamp
+
+    # 剔除原版中误删的参数 (比如原版删了 callback 导致报错，这里可以把它加回来)
+    del-rules: >
+      callback
+
+  # --- 示例 B: 新增规则 (百度) ---
+  baidu:
+    urlPattern: ^https?:\/\/(?:[a-z0-9-]+\.)*?baidu(?:\.[a-z]{2,}){1,}
+    # 只要 rules 非空，脚本会自动设置 completeProvider: false
+    rules: >
+      tn
+      wd
+      eqid
+      ck

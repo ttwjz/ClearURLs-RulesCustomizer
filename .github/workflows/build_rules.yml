@@ -1,0 +1,49 @@
+name: Build ClearURLs Rules
+
+on:
+    # 当修改了配置文件或脚本时触发
+    push:
+        branches: ["main"]
+        paths:
+            - "custom_rules.yaml"
+            - "script/**"
+            - ".github/workflows/**"
+    # 每天北京时间早上 6:00 (UTC 22:00) 自动运行，同步上游
+    schedule:
+        - cron: "0 22 * * *"
+    # 允许手动在 GitHub 界面点击运行
+    workflow_dispatch:
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write # 需要写权限来发布 Pages
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: "3.9"
+
+            - name: Install dependencies
+              run: |
+                  pip install -r requirements.txt
+
+            - name: Run builder script
+              run: |
+                  python script/builder.py
+                  # 运行完成后，rules 目录下会生成 merged_rules.json 和 upstream_rules.json
+
+            - name: Deploy to GitHub Pages
+              uses: peaceiris/actions-gh-pages@v3
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  publish_dir: ./
+                  publish_branch: gh-pages
+                  keep_files: false
+                  # 只发布这两个 json 文件，排除掉源代码
+                  exclude_assets: ".github,script,custom_rules.yaml,requirements.txt,README.md,.gitignore"
