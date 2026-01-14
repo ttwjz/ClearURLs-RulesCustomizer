@@ -4,11 +4,18 @@ import copy
 import yaml
 import os
 
-# 配置
+# ================= 配置区域 =================
+# 上游规则地址
 UPSTREAM_URL = "https://rules2.clearurls.xyz/data.minify.json"
-UPSTREAM_FILE = "./rules/upstream_rules.json"  # 上游备份文件名
-OUTPUT_FILE = "./rules/merged_rules.json"  # 最终产物文件名
+
+# 输出目录和文件名
+OUTPUT_DIR = "rules"
+UPSTREAM_FILE = os.path.join(OUTPUT_DIR, "upstream_rules.json")  # 上游文件名
+OUTPUT_FILE = os.path.join(OUTPUT_DIR, "merged_rules.json")  # 合并结果文件名
+
+# 自定义规则源文件
 CUSTOM_FILE = "custom_rules.yaml"
+# ===========================================
 
 # 默认规则模板
 DEFAULT_PROVIDER = {
@@ -25,6 +32,12 @@ DEFAULT_PROVIDER = {
 # 需要处理为数组的字段
 RULE_FIELDS = ["rules", "referralMarketing", "rawRules", "redirections"]
 ARRAY_FIELDS = RULE_FIELDS + ["exceptions"]
+
+
+def ensure_dir(directory):
+    """确保输出目录存在"""
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 
 def normalize_to_list(value):
@@ -48,10 +61,10 @@ def fetch_upstream():
         r.raise_for_status()
         data = r.json()
 
-        # 保存一份副本到本地
+        # 保存上游备份 (upstream_rules.json)
         print(f"[-] Saving upstream backup to {UPSTREAM_FILE}...")
         with open(UPSTREAM_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+            json.dump(data, f, indent=4, ensure_ascii=False)
 
         return data
     except Exception as e:
@@ -131,11 +144,11 @@ def process_rules(upstream_data, custom_data):
 def save_output(data):
     print(f"[-] Saving final rules to {OUTPUT_FILE}...")
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        # indent=0 减小体积，但保留换行方便 git diff (如果不需要 diff 可设为 None)
-        json.dump(data, f, indent=0, ensure_ascii=False)
+        json.dump(data, f, indent=4, ensure_ascii=False)
 
 
 if __name__ == "__main__":
+    ensure_dir(OUTPUT_DIR)
     upstream = fetch_upstream()
     custom = load_custom()
     final_data = process_rules(upstream, custom)

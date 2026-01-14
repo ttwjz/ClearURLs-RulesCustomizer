@@ -1,24 +1,23 @@
 name: Build ClearURLs Rules
 
 on:
-    # 当修改了配置文件或脚本时触发
     push:
         branches: ["main"]
         paths:
             - "custom_rules.yaml"
             - "script/**"
             - ".github/workflows/**"
-    # 每天北京时间早上 6:00 (UTC 22:00) 自动运行，同步上游
+            # 注意：不要把 'rules/**' 加在这里，否则会死循环
     schedule:
-        - cron: "0 22 * * *"
-    # 允许手动在 GitHub 界面点击运行
+        - cron: "0 22 * * *" # 每天 UTC 22:00 (北京时间早上7点) 运行
     workflow_dispatch:
 
 jobs:
     build:
         runs-on: ubuntu-latest
         permissions:
-            contents: write # 需要写权限来发布 Pages
+            # 必须给予写权限才能推送到仓库
+            contents: write
 
         steps:
             - name: Checkout code
@@ -36,14 +35,22 @@ jobs:
             - name: Run builder script
               run: |
                   python script/builder.py
-                  # 运行完成后，rules 目录下会生成 merged_rules.json 和 upstream_rules.json
 
-            - name: Deploy to GitHub Pages
-              uses: peaceiris/actions-gh-pages@v3
-              with:
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
-                  publish_dir: ./
-                  publish_branch: gh-pages
-                  keep_files: false
-                  # 只发布这两个 json 文件，排除掉源代码
-                  exclude_assets: ".github,script,custom_rules.yaml,requirements.txt,README.md,.gitignore"
+            - name: Commit and Push to Main
+              run: |
+                  # 配置 Git 用户信息（显示为 GitHub Actions Bot）
+                  git config --global user.name "github-actions[bot]"
+                  git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+                  # 添加生成的文件
+                  git add rules/
+
+                  # 检查是否有变更
+                  if git diff --staged --quiet; then
+                    print("No changes to commit.")
+                  else
+                    # 提交并推送
+                    # [skip ci] 是个双重保险，告诉 Github 这次提交不要触发 CI
+                    git commit -m "Auto-update rules [skip ci]"
+                    git push
+                  fi
