@@ -1972,6 +1972,8 @@
             "rules": [
                 "ck",
                 "eqid",
+                "inputT",
+                "rsv_bp",
                 "tn",
                 "wd"
             ],

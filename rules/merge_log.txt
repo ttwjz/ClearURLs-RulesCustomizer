@@ -1,0 +1,34 @@
+========================================
+         ClearURLs Merge Log
+========================================
+Execution Time   : 2026-01-14 21:35:20
+Upstream Modified: Sun, 27 Jul 2025 13:05:30 GMT
+Custom Modified  : 2026-01-14 21:32:19
+----------------------------------------
+
+[-] Fetching upstream from https://rules2.clearurls.xyz/data.minify.json...
+[-] Saving upstream backup to rules\upstream_rules.json...
+[-] Loading custom rules from custom_rules.yaml...
+[-] Processing rules...
+    [Delete] doubleclick
+    [WARN] Delete failed: Provider '247-inc' not found in upstream.
+    [WARN] Delete failed: Provider 'ad-connect' not found in upstream.
+    [WARN] Delete failed: Provider 'another-bad-site' not found in upstream.
+    [WARN] Delete failed: Provider 'example-com' not found in upstream.
+    [Create] baidu
+    [Create] example_new_site
+    [WARN] Missing Modify: 'bilibili' not found in upstream. Applying as Create.
+    [Create (Missing Modify)] bilibili
+        [WARN] 'bilibili': Trying to delete non-existent rules: ['callback']
+    [Modify] google
+[-] Saving merged rules to rules\merged_rules.json...
+
+========================================
+WARNING SUMMARY (6)
+========================================
+    [WARN] Delete failed: Provider '247-inc' not found in upstream.
+    [WARN] Delete failed: Provider 'ad-connect' not found in upstream.
+    [WARN] Delete failed: Provider 'another-bad-site' not found in upstream.
+    [WARN] Delete failed: Provider 'example-com' not found in upstream.
+    [WARN] Missing Modify: 'bilibili' not found in upstream. Applying as Create.
+        [WARN] 'bilibili': Trying to delete non-existent rules: ['callback']
