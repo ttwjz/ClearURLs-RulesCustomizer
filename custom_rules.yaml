@@ -81,5 +81,18 @@ add-providers:
 #
 # ------------------------------------------
 modify-providers:
-  baidu:
-    urlPattern: ^https?:\/\/(?:[a-z0-9-]+\.)*?baidu(?:\.[a-z]{2,}){1,}
+  bing:
+    urlPattern: ^https?:\\/\\/(?:[a-z0-9-]+\\.)*?bing(?:\\.[a-z]{2,}){1,}
+    rules: >
+      cvid, form, pq, sc, qs, sp, ghc, sk, lq,
+      go, ans, refig, plvar, pc,
+      setmkt, cc, ld, ssd, sid, muid, muidb,
+      PC, adppc, FORM, qpvt, CREA, search, FPIG, pglt
+
+  google:
+    urlPattern: ^https?:\\/\\/(?:[a-z0-9-]+\\.)*?google(?:\\.[a-z]{2,}){1,}
+    rules: >
+      gws_rd, client, sxsrf, ei, ved, uact, fbs,
+      sclient, biw, bih, gs_lcp, sxsrf, gs_rfai,
+      newwindow, sca_esv, oq, gs_lp, source, iflsig,
+      sa, aic, cshid

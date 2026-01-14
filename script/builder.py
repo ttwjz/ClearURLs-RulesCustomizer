@@ -10,7 +10,8 @@ from email.utils import parsedate_to_datetime
 UPSTREAM_URL = "https://rules2.clearurls.xyz/data.minify.json"
 OUTPUT_DIR = "rules"
 UPSTREAM_FILE = os.path.join(OUTPUT_DIR, "upstream_rules.json")
-OUTPUT_FILE = os.path.join(OUTPUT_DIR, "merged_rules.json")
+OUTPUT_FILE = os.path.join(OUTPUT_DIR, "merged_rules.json")  # 人类可读版
+MINIFIED_FILE = os.path.join(OUTPUT_DIR, "rules_min.json")  # 插件专用版(压缩)
 LOG_FILE = os.path.join(OUTPUT_DIR, "merge_log.txt")
 CUSTOM_FILE = "custom_rules.yaml"
 
@@ -48,9 +49,7 @@ class MergeLogger:
         self.lines.append(message)
 
     def header(self, upstream_ts, custom_ts):
-        # 获取当前北京时间
         now = datetime.now(CN_TZ).strftime("%Y-%m-%d %H:%M:%S")
-
         self.lines.insert(0, "=" * 40)
         self.lines.insert(1, "         ClearURLs Merge Log")
         self.lines.insert(2, "=" * 40)
@@ -76,31 +75,20 @@ def ensure_dir(directory):
 
 
 def normalize_to_list(value):
-    """
-    将输入标准化为列表。
-    1. 列表: 直接返回
-    2. 字符串: 替换逗号为空格 -> 切分 -> 去除每项两端的引号
-    """
     if isinstance(value, str):
-        # 1. 逗号变空格
-        # 2. 按空白切分
+        # 替换逗号为空格 -> 切分 -> 去除每项两端的引号
         items = value.replace(",", " ").split()
-        # 3. 去除每一项两端的单引号和双引号
         return [item.strip("\"'") for item in items]
-
     if isinstance(value, list):
         return value
     return []
 
 
 def format_http_date(date_str):
-    """将 HTTP 头时间转换为北京时间字符串"""
     if not date_str:
         return "Unknown"
     try:
-        # 1. 解析 RFC 1123 格式 (得到的是带时区的 datetime, 通常是 GMT)
         dt = parsedate_to_datetime(date_str)
-        # 2. 转换为北京时间
         dt_cn = dt.astimezone(CN_TZ)
         return dt_cn.strftime("%Y-%m-%d %H:%M:%S")
     except Exception:
@@ -108,10 +96,8 @@ def format_http_date(date_str):
 
 
 def get_file_mtime(filepath):
-    """获取文件修改时间并转换为北京时间字符串"""
     if os.path.exists(filepath):
         ts = os.path.getmtime(filepath)
-        # 将时间戳转换为北京时间
         dt_cn = datetime.fromtimestamp(ts, CN_TZ)
         return dt_cn.strftime("%Y-%m-%d %H:%M:%S")
     return "N/A (File not found)"
@@ -244,10 +230,52 @@ def process_rules(upstream_data, custom_data, logger):
     return {"providers": providers}
 
 
+def minify_data(data):
+    """生成最小化的数据副本"""
+    minified_providers = {}
+
+    for name, provider in data.get("providers", {}).items():
+        mini = {}
+
+        # 1. urlPattern (必填)
+        if "urlPattern" in provider:
+            mini["urlPattern"] = provider["urlPattern"]
+
+        # 2. completeProvider: 如果是 False，剔除 (保留 True)
+        if provider.get("completeProvider") is True:
+            mini["completeProvider"] = True
+
+        # 3. forceRedirection: 如果是默认 False，剔除 (保留 True)
+        if provider.get("forceRedirection") is True:
+            mini["forceRedirection"] = True
+
+        # 4. 数组字段: 如果为空，剔除
+        for key in ARRAY_FIELDS:
+            val = provider.get(key)
+            if val and len(val) > 0:
+                mini[key] = val
+
+        minified_providers[name] = mini
+
+    return {"providers": minified_providers}
+
+
 def save_output(data, logger):
+    # 1. 保存 Pretty 版本 (Merged Rules)
     logger.log(f"[-] Saving merged rules to {OUTPUT_FILE}...")
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
+
+    # 2. 保存 Minified 版本 (Rules.min.json)
+    logger.log("[-] Generating minified rules...")
+    minified_data = minify_data(data)
+
+    logger.log(f"[-] Saving minified rules to {MINIFIED_FILE}...")
+    with open(MINIFIED_FILE, "w", encoding="utf-8") as f:
+        # separators=(',', ':') 移除所有不必要的空格
+        json.dump(
+            minified_data, f, indent=None, separators=(",", ":"), ensure_ascii=False
+        )
 
 
 if __name__ == "__main__":
