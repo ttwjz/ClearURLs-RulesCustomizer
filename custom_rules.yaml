@@ -2,32 +2,42 @@
 # ClearURLs 自定义规则配置
 # ==========================================
 
-# 1. 黑名单：这里的厂商规则会从原始列表中完全删除
-blocklist: >
+# ------------------------------------------
+# 1. 删除列表：这里的厂商会从原始规则中彻底移除
+# ------------------------------------------
+del-providers: >
   doubleclick
   247-inc
+  ad-connect
 
-# 2. 规则定制：新增或修改
-providers:
-  # --- 示例 A: 修改现有规则 (B站) ---
+# ------------------------------------------
+# 2. 新增列表：用于添加上游没有的规则
+# (注：如果这里写的规则在上游里其实已经存在，脚本会自动按"修改"逻辑合并，不会报错)
+# ------------------------------------------
+add-providers:
+  baidu:
+    urlPattern: ^https?:\/\/(?:[a-z0-9-]+\.)*?baidu(?:\.[a-z]{2,}){1,}
+    rules: >
+      tn wd eqid ck
+
+  example_new_site:
+    urlPattern: example\.com
+    rules: "id token"
+
+# ------------------------------------------
+# 3. 修改列表：用于调整上游已有的规则
+# (注：如果这里写的规则在上游里其实不存在，脚本会自动按"新增"逻辑创建，不会报错)
+# ------------------------------------------
+modify-providers:
   bilibili:
-    # 追加要移除的参数 (使用 > 符号支持多行/空格分隔，无需引号和逗号)
+    # 追加参数
     rules: >
       spm_id_from
       vd_source
-      share_source share_medium
-      timestamp
-
-    # 剔除原版中误删的参数 (比如原版删了 callback 导致报错，这里可以把它加回来)
+    # 恢复误删参数
     del-rules: >
       callback
 
-  # --- 示例 B: 新增规则 (百度) ---
-  baidu:
-    urlPattern: ^https?:\/\/(?:[a-z0-9-]+\.)*?baidu(?:\.[a-z]{2,}){1,}
-    # 只要 rules 非空，脚本会自动设置 completeProvider: false
-    rules: >
-      tn
-      wd
-      eqid
-      ck
+  google:
+    # 比如我想保留 google 的 ved 参数不被清理
+    del-rules: ved
