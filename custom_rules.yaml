@@ -6,9 +6,9 @@
 # 1. 删除列表：这里的厂商会从原始规则中彻底移除
 # ------------------------------------------
 del-providers: >
-  doubleclick
-  247-inc
+  doubleclick, 247-inc,
   ad-connect
+  another-bad-site, example-com
 
 # ------------------------------------------
 # 2. 新增列表：用于添加上游没有的规则
@@ -18,7 +18,9 @@ add-providers:
   baidu:
     urlPattern: ^https?:\/\/(?:[a-z0-9-]+\.)*?baidu(?:\.[a-z]{2,}){1,}
     rules: >
-      tn wd eqid ck
+      tn, wd, eqid,
+      ck, rsv_bp,
+      inputT
 
   example_new_site:
     urlPattern: example\.com
@@ -32,8 +34,7 @@ modify-providers:
   bilibili:
     # 追加参数
     rules: >
-      spm_id_from
-      vd_source
+      spm_id_from vd_source
     # 恢复误删参数
     del-rules: >
       callback

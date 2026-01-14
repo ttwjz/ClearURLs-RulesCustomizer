@@ -5,7 +5,9 @@ import yaml
 import os
 
 # ================= 配置区域 =================
-UPSTREAM_URL = "https://rules2.clearurls.xyz/data.minify.json"
+UPSTREAM_URL = (
+    "https://gitlab.com/Kevin Roebert/ClearURLs/raw/master/data/data.min.json"
+)
 OUTPUT_DIR = "rules"
 UPSTREAM_FILE = os.path.join(OUTPUT_DIR, "upstream_rules.json")
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "merged_rules.json")
@@ -33,9 +35,17 @@ def ensure_dir(directory):
 
 
 def normalize_to_list(value):
-    """将字符串按空格切分为列表，如果是列表则直接返回"""
+    """
+    将输入标准化为列表。
+    1. 列表: 直接返回
+    2. 字符串:
+       - 将所有逗号(,)替换为空格
+       - 按空白字符(空格、换行、Tab)切分
+       - 自动去除空项
+    """
     if isinstance(value, str):
-        return value.split()
+        # 核心修改：允许逗号作为分隔符 (先转为空格，再交给 split 处理)
+        return value.replace(",", " ").split()
     if isinstance(value, list):
         return value
     return []
@@ -71,17 +81,12 @@ def load_custom():
 def upsert_provider(providers, name, patch_data, section_name):
     """
     统一处理 新增(Add) 和 修改(Modify) 的逻辑
-    providers: 总规则字典
-    name: 厂商名称
-    patch_data: 自定义数据
-    section_name: 当前来源 ('add-providers' 或 'modify-providers')，仅用于日志区分
     """
     if not patch_data:
         return
 
     exists = name in providers
 
-    # 日志逻辑：根据实际情况显示操作，而不是看它在 yaml 的哪个区
     if not exists:
         action_log = "[Create]"
         if section_name == "modify-providers":
@@ -97,29 +102,24 @@ def upsert_provider(providers, name, patch_data, section_name):
     target = providers[name]
 
     for field, value in patch_data.items():
-        # 预处理：转列表
         if field in ARRAY_FIELDS or field.startswith("del-"):
             value = normalize_to_list(value)
 
-        # 逻辑 1: 删除列表中的指定项 (del-rules, del-exceptions...)
         if field.startswith("del-"):
             target_field = field[4:]
             if target_field in ARRAY_FIELDS:
                 original_list = target.get(target_field, [])
                 target[target_field] = [x for x in original_list if x not in value]
 
-        # 逻辑 2: 追加列表 (合并去重)
         elif field in ARRAY_FIELDS:
             original_list = target.get(field, [])
             new_set = set(original_list)
             new_set.update(value)
             target[field] = sorted(list(new_set))
 
-        # 逻辑 3: 标量直接覆盖
         else:
             target[field] = value
 
-    # 逻辑 4: 自动推断 completeProvider
     if "completeProvider" not in patch_data:
         has_rules = any(len(target.get(f, [])) > 0 for f in RULE_FIELDS)
         if has_rules:
@@ -130,21 +130,19 @@ def process_rules(upstream_data, custom_data):
     print("[-] Processing rules...")
     providers = upstream_data.get("providers", {})
 
-    # 1. 处理删除 (Del-Providers)
+    # 1. Del-Providers (支持字符串+逗号)
     del_list = normalize_to_list(custom_data.get("del-providers", []))
     for name in del_list:
         if name in providers:
             # print(f"    [Delete] {name}")
             del providers[name]
 
-    # 2. 处理新增 (Add-Providers)
-    # 即使已存在，也会按照 upsert 逻辑合并
+    # 2. Add-Providers
     add_dict = custom_data.get("add-providers", {}) or {}
     for name, patch in add_dict.items():
         upsert_provider(providers, name, patch, "add-providers")
 
-    # 3. 处理修改 (Modify-Providers)
-    # 即使不存在，也会按照 upsert 逻辑新建
+    # 3. Modify-Providers
     mod_dict = custom_data.get("modify-providers", {}) or {}
     for name, patch in mod_dict.items():
         upsert_provider(providers, name, patch, "modify-providers")
