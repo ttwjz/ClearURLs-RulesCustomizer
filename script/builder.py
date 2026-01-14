@@ -3,15 +3,20 @@ import requests
 import copy
 import yaml
 import os
+import hashlib  # 新增：用于计算 hash
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 
 # ================= 配置区域 =================
+# 上游地址更新
 UPSTREAM_URL = "https://rules2.clearurls.xyz/data.minify.json"
+UPSTREAM_HASH_URL = "https://rules2.clearurls.xyz/rules.minify.hash"
+
 OUTPUT_DIR = "rules"
 UPSTREAM_FILE = os.path.join(OUTPUT_DIR, "upstream_rules.json")
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "merged_rules.json")  # 人类可读版
 MINIFIED_FILE = os.path.join(OUTPUT_DIR, "rules.min.json")  # 插件专用版(压缩)
+MINIFIED_HASH_FILE = os.path.join(OUTPUT_DIR, "rules.min.hash")  # 插件专用版(Hash)
 LOG_FILE = os.path.join(OUTPUT_DIR, "merge_log.txt")
 CUSTOM_FILE = "custom_rules.yaml"
 
@@ -86,6 +91,11 @@ def normalize_to_list(value):
     return []
 
 
+def calculate_sha256(content_bytes):
+    """计算 bytes 的 SHA256"""
+    return hashlib.sha256(content_bytes).hexdigest()
+
+
 def format_http_date(date_str):
     if not date_str:
         return "Unknown"
@@ -108,17 +118,37 @@ def get_file_mtime(filepath):
 def fetch_upstream(logger):
     logger.log(f"[-] Fetching upstream from {UPSTREAM_URL}...")
     try:
+        # 1. 下载 JSON
         r = requests.get(UPSTREAM_URL)
         r.raise_for_status()
+        json_bytes = r.content  # 获取二进制内容用于 hash 计算
+        data = r.json()
         raw_date = r.headers.get("Last-Modified")
         formatted_date = format_http_date(raw_date)
-        data = r.json()
+
+        # 2. 下载 Hash
+        logger.log(f"[-] Fetching upstream hash from {UPSTREAM_HASH_URL}...")
+        r_hash = requests.get(UPSTREAM_HASH_URL)
+        r_hash.raise_for_status()
+        upstream_hash = r_hash.text.strip()
+
+        # 3. 校验
+        local_hash = calculate_sha256(json_bytes)
+        if local_hash != upstream_hash:
+            raise Exception(
+                f"Hash mismatch! Upstream: {upstream_hash}, Downloaded: {local_hash}"
+            )
+
+        logger.log("    [Check] Upstream hash verified successfully.")
+
+        # 4. 保存备份
         logger.log(f"[-] Saving upstream backup to {UPSTREAM_FILE}...")
         with open(UPSTREAM_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
+
         return data, formatted_date
     except Exception as e:
-        logger.log(f"[!] Error fetching upstream: {e}")
+        logger.log(f"[!] Error fetching/verifying upstream: {e}")
         exit(1)
 
 
@@ -162,7 +192,6 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
     target = providers[name]
 
     for field, value in patch_data.items():
-        # 预处理
         value_list = []
         is_array = False
         target_field_name = field
@@ -182,15 +211,12 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
             is_array = True
 
         # 逻辑处理
-
-        # 1. 覆盖模式 (rst-)
         if field.startswith("rst-"):
             if is_array:
                 target[target_field_name] = sorted(list(set(value_list)))
             else:
                 target[target_field_name] = value
 
-        # 2. 删除模式 (del-)
         elif field.startswith("del-"):
             if is_array:
                 original_list = target.get(target_field_name, [])
@@ -206,27 +232,22 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
                         x for x in original_list if x not in value_list
                     ]
 
-        # 3. 追加模式 (标准数组)
         elif is_array:
             original_list = target.get(field, [])
-
-            # --- 新增：检查重复项并记录日志 ---
+            # 查重
             duplicates = [x for x in value_list if x in original_list]
             if duplicates:
                 logger.log(
                     f"        [Info] '{name}' ({field}): Skipped duplicates {duplicates}"
                 )
-            # -------------------------------
 
             new_set = set(original_list)
             new_set.update(value_list)
             target[field] = sorted(list(new_set))
 
-        # 4. 标量覆盖
         else:
             target[field] = value
 
-    # 自动判断 completeProvider
     if "completeProvider" not in patch_data:
         has_rules = any(len(target.get(f, [])) > 0 for f in RULE_FIELDS)
         target["completeProvider"] = not has_rules
@@ -236,7 +257,6 @@ def process_rules(upstream_data, custom_data, logger):
     logger.log("[-] Processing rules...")
     providers = upstream_data.get("providers", {})
 
-    # 1. Del
     del_list = normalize_to_list(custom_data.get("del-providers", []))
     for name in del_list:
         if name in providers:
@@ -247,12 +267,10 @@ def process_rules(upstream_data, custom_data, logger):
                 f"    [WARN] Delete failed: Provider '{name}' not found in upstream."
             )
 
-    # 2. Add
     add_dict = custom_data.get("add-providers", {}) or {}
     for name, patch in add_dict.items():
         upsert_provider(providers, name, patch, "add-providers", logger)
 
-    # 3. Modify
     mod_dict = custom_data.get("modify-providers", {}) or {}
     for name, patch in mod_dict.items():
         upsert_provider(providers, name, patch, "modify-providers", logger)
@@ -285,11 +303,13 @@ def minify_data(data):
 
 
 def save_output(data, logger):
+    # 1. 保存 merged_rules.json
     logger.log(f"[-] Saving merged rules to {OUTPUT_FILE}...")
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
-    logger.log("[-] Generating minified rules...")
+    # 2. 生成并保存 rules.min.json
+    logger.log("[-] Generating minified rules...")  # 已修复 f-string
     minified_data = minify_data(data)
 
     logger.log(f"[-] Saving minified rules to {MINIFIED_FILE}...")
@@ -297,6 +317,16 @@ def save_output(data, logger):
         json.dump(
             minified_data, f, indent=None, separators=(",", ":"), ensure_ascii=False
         )
+
+    # 3. 计算并保存 rules.min.hash
+    logger.log(f"[-] Calculating hash for {MINIFIED_FILE}...")
+    with open(MINIFIED_FILE, "rb") as f:
+        content_bytes = f.read()
+        file_hash = calculate_sha256(content_bytes)
+
+    logger.log(f"[-] Saving hash ({file_hash}) to {MINIFIED_HASH_FILE}...")
+    with open(MINIFIED_HASH_FILE, "w", encoding="utf-8") as f:
+        f.write(file_hash)
 
 
 if __name__ == "__main__":
