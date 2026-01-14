@@ -1,7 +1,7 @@
 ========================================
          ClearURLs Merge Log
 ========================================
-Execution Time   : 2026-01-14 23:31:59 (CST)
+Execution Time   : 2026-01-14 23:36:24 (CST)
 Upstream Modified: 2025-07-27 21:05:30
 Custom Modified  : 2026-01-14 23:23:17
 ----------------------------------------
@@ -12,7 +12,9 @@ Custom Modified  : 2026-01-14 23:23:17
 [-] Processing rules...
     [Create] baidu
     [Modify] bing
+        [Info] 'bing' (rules): Skipped duplicates ['cvid', 'sc', 'qs', 'sp', 'sk']
     [Modify] google
+        [Info] 'google' (rules): Skipped duplicates ['sxsrf', 'ei', 'ved', 'uact', 'fbs', 'sxsrf', 'oq', 'source', 'iflsig', 'sa', 'cshid']
 [-] Saving merged rules to rules\merged_rules.json...
 [-] Generating minified rules...
 [-] Saving minified rules to rules\rules.min.json...

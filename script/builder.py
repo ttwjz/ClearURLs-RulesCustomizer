@@ -3,7 +3,6 @@ import requests
 import copy
 import yaml
 import os
-import time
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 
@@ -25,7 +24,7 @@ KEYWORD_DELETE_ALL = "DELETE_ENTIRE_ARRAY"
 
 DEFAULT_PROVIDER = {
     "urlPattern": "",
-    "completeProvider": True,  # 初始默认值，后续会根据规则存在与否自动覆盖
+    "completeProvider": True,
     "rules": [],
     "referralMarketing": [],
     "rawRules": [],
@@ -183,12 +182,15 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
             is_array = True
 
         # 逻辑处理
+
+        # 1. 覆盖模式 (rst-)
         if field.startswith("rst-"):
             if is_array:
                 target[target_field_name] = sorted(list(set(value_list)))
             else:
                 target[target_field_name] = value
 
+        # 2. 删除模式 (del-)
         elif field.startswith("del-"):
             if is_array:
                 original_list = target.get(target_field_name, [])
@@ -204,19 +206,27 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
                         x for x in original_list if x not in value_list
                     ]
 
+        # 3. 追加模式 (标准数组)
         elif is_array:
             original_list = target.get(field, [])
+
+            # --- 新增：检查重复项并记录日志 ---
+            duplicates = [x for x in value_list if x in original_list]
+            if duplicates:
+                logger.log(
+                    f"        [Info] '{name}' ({field}): Skipped duplicates {duplicates}"
+                )
+            # -------------------------------
+
             new_set = set(original_list)
             new_set.update(value_list)
             target[field] = sorted(list(new_set))
 
+        # 4. 标量覆盖
         else:
-            # 标量覆盖
             target[field] = value
 
-    # --- 自动判断 completeProvider (核心修改) ---
-    # 逻辑：如果有任何过滤规则，则不是 completeProvider (False)
-    #      如果没有任何过滤规则，则是 completeProvider (True)
+    # 自动判断 completeProvider
     if "completeProvider" not in patch_data:
         has_rules = any(len(target.get(f, [])) > 0 for f in RULE_FIELDS)
         target["completeProvider"] = not has_rules
@@ -251,26 +261,19 @@ def process_rules(upstream_data, custom_data, logger):
 
 
 def minify_data(data):
-    """生成最小化的数据副本"""
     minified_providers = {}
 
     for name, provider in data.get("providers", {}).items():
         mini = {}
-
-        # 1. urlPattern (必填)
         if "urlPattern" in provider:
             mini["urlPattern"] = provider["urlPattern"]
 
-        # 2. completeProvider (核心修改)
-        # 逻辑：默认为 False (不写)。只有当它是 True 时，才写入。
         if provider.get("completeProvider") is True:
             mini["completeProvider"] = True
 
-        # 3. forceRedirection: 默认 False (不写)。只有 True 才写入。
         if provider.get("forceRedirection") is True:
             mini["forceRedirection"] = True
 
-        # 4. 数组字段: 如果有值才写入
         for key in ARRAY_FIELDS:
             val = provider.get(key)
             if val and len(val) > 0:
@@ -291,7 +294,6 @@ def save_output(data, logger):
 
     logger.log(f"[-] Saving minified rules to {MINIFIED_FILE}...")
     with open(MINIFIED_FILE, "w", encoding="utf-8") as f:
-        # separators=(',', ':') 移除 JSON 中所有的空格
         json.dump(
             minified_data, f, indent=None, separators=(",", ":"), ensure_ascii=False
         )
