@@ -3,8 +3,8 @@ import requests
 import copy
 import yaml
 import os
-import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+from email.utils import parsedate_to_datetime
 
 # ================= 配置区域 =================
 UPSTREAM_URL = "https://rules2.clearurls.xyz/data.minify.json"
@@ -13,6 +13,9 @@ UPSTREAM_FILE = os.path.join(OUTPUT_DIR, "upstream_rules.json")
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "merged_rules.json")
 LOG_FILE = os.path.join(OUTPUT_DIR, "merge_log.txt")
 CUSTOM_FILE = "custom_rules.yaml"
+
+# 定义北京时区 (UTC+8)
+CN_TZ = timezone(timedelta(hours=8))
 # ===========================================
 
 DEFAULT_PROVIDER = {
@@ -36,20 +39,22 @@ class MergeLogger:
         self.warnings = []
 
     def log(self, message):
-        print(message)  # 控制台依旧打印
+        print(message)
         self.lines.append(message)
 
     def warn(self, message):
-        print(f"\033[93m{message}\033[0m")  # 控制台黄色打印
+        print(f"\033[93m{message}\033[0m")
         self.warnings.append(message)
         self.lines.append(message)
 
     def header(self, upstream_ts, custom_ts):
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # 获取当前北京时间
+        now = datetime.now(CN_TZ).strftime("%Y-%m-%d %H:%M:%S")
+
         self.lines.insert(0, "=" * 40)
         self.lines.insert(1, "         ClearURLs Merge Log")
         self.lines.insert(2, "=" * 40)
-        self.lines.insert(3, f"Execution Time   : {now}")
+        self.lines.insert(3, f"Execution Time   : {now} (CST)")
         self.lines.insert(4, f"Upstream Modified: {upstream_ts}")
         self.lines.insert(5, f"Custom Modified  : {custom_ts}")
         self.lines.insert(6, "-" * 40)
@@ -58,7 +63,6 @@ class MergeLogger:
     def save(self):
         with open(LOG_FILE, "w", encoding="utf-8") as f:
             f.write("\n".join(self.lines))
-            # 如果有警告，在该文件末尾汇总
             if self.warnings:
                 f.write("\n\n" + "=" * 40 + "\n")
                 f.write(f"WARNING SUMMARY ({len(self.warnings)})\n")
@@ -72,7 +76,6 @@ def ensure_dir(directory):
 
 
 def normalize_to_list(value):
-    """将输入标准化为列表 (支持逗号/空格分隔)"""
     if isinstance(value, str):
         return value.replace(",", " ").split()
     if isinstance(value, list):
@@ -80,10 +83,27 @@ def normalize_to_list(value):
     return []
 
 
+def format_http_date(date_str):
+    """将 HTTP 头时间转换为北京时间字符串"""
+    if not date_str:
+        return "Unknown"
+    try:
+        # 1. 解析 RFC 1123 格式 (得到的是带时区的 datetime, 通常是 GMT)
+        dt = parsedate_to_datetime(date_str)
+        # 2. 转换为北京时间
+        dt_cn = dt.astimezone(CN_TZ)
+        return dt_cn.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return date_str
+
+
 def get_file_mtime(filepath):
+    """获取文件修改时间并转换为北京时间字符串"""
     if os.path.exists(filepath):
         ts = os.path.getmtime(filepath)
-        return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
+        # 将时间戳转换为北京时间
+        dt_cn = datetime.fromtimestamp(ts, CN_TZ)
+        return dt_cn.strftime("%Y-%m-%d %H:%M:%S")
     return "N/A (File not found)"
 
 
@@ -93,8 +113,8 @@ def fetch_upstream(logger):
         r = requests.get(UPSTREAM_URL)
         r.raise_for_status()
 
-        # 获取 Last-Modified 头
-        last_modified = r.headers.get("Last-Modified", "Unknown (Header missing)")
+        raw_date = r.headers.get("Last-Modified")
+        formatted_date = format_http_date(raw_date)
 
         data = r.json()
 
@@ -102,7 +122,7 @@ def fetch_upstream(logger):
         with open(UPSTREAM_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
 
-        return data, last_modified
+        return data, formatted_date
     except Exception as e:
         logger.log(f"[!] Error fetching upstream: {e}")
         exit(1)
@@ -125,8 +145,6 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
         return
 
     exists = name in providers
-
-    # 冲突检测逻辑：Add vs Modify
     action_type = ""
 
     if section_name == "add-providers":
@@ -144,16 +162,13 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
                 f"    [WARN] Missing Modify: '{name}' not found in upstream. Applying as Create."
             )
             action_type = "Create (Missing Modify)"
-            # 初始化
             providers[name] = copy.deepcopy(DEFAULT_PROVIDER)
         else:
             action_type = "Modify"
 
-    # 如果是新建（且上面没有初始化过），则初始化
     if name not in providers:
         providers[name] = copy.deepcopy(DEFAULT_PROVIDER)
 
-    # 常规日志
     if "WARN" not in action_type:
         logger.log(f"    [{action_type:<6}] {name}")
 
@@ -163,13 +178,11 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
         if field in ARRAY_FIELDS or field.startswith("del-"):
             value = normalize_to_list(value)
 
-        # 逻辑 1: 删除列表中的指定项
         if field.startswith("del-"):
-            target_field = field[4:]  # e.g. "rules"
+            target_field = field[4:]
             if target_field in ARRAY_FIELDS:
                 original_list = target.get(target_field, [])
 
-                # 冲突检测：检查要删除的规则是否存在
                 not_found_items = [x for x in value if x not in original_list]
                 if not_found_items:
                     logger.warn(
@@ -178,14 +191,12 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
 
                 target[target_field] = [x for x in original_list if x not in value]
 
-        # 逻辑 2: 追加列表
         elif field in ARRAY_FIELDS:
             original_list = target.get(field, [])
             new_set = set(original_list)
             new_set.update(value)
             target[field] = sorted(list(new_set))
 
-        # 逻辑 3: 标量覆盖
         else:
             target[field] = value
 
@@ -199,7 +210,7 @@ def process_rules(upstream_data, custom_data, logger):
     logger.log("[-] Processing rules...")
     providers = upstream_data.get("providers", {})
 
-    # 1. Del-Providers
+    # 1. Del
     del_list = normalize_to_list(custom_data.get("del-providers", []))
     for name in del_list:
         if name in providers:
@@ -210,12 +221,12 @@ def process_rules(upstream_data, custom_data, logger):
                 f"    [WARN] Delete failed: Provider '{name}' not found in upstream."
             )
 
-    # 2. Add-Providers
+    # 2. Add
     add_dict = custom_data.get("add-providers", {}) or {}
     for name, patch in add_dict.items():
         upsert_provider(providers, name, patch, "add-providers", logger)
 
-    # 3. Modify-Providers
+    # 3. Modify
     mod_dict = custom_data.get("modify-providers", {}) or {}
     for name, patch in mod_dict.items():
         upsert_provider(providers, name, patch, "modify-providers", logger)
@@ -232,20 +243,15 @@ def save_output(data, logger):
 if __name__ == "__main__":
     ensure_dir(OUTPUT_DIR)
 
-    # 初始化日志记录器
     logger = MergeLogger()
 
-    # 获取数据
     upstream, upstream_ts = fetch_upstream(logger)
     custom, custom_ts = load_custom(logger)
 
-    # 写入头部信息
     logger.header(upstream_ts, custom_ts)
 
-    # 处理
     final_data = process_rules(upstream, custom, logger)
     save_output(final_data, logger)
 
-    # 保存日志
     logger.save()
     print(f"[ok] Log saved to {LOG_FILE}")
