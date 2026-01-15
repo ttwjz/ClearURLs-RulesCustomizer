@@ -47,27 +47,50 @@ jobs:
         run: |
           python script/builder.py
 
-      - name: Commit and Push to Main
-        run: |
-          # 1. 配置 Git 用户
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # 【关键配置】
+          # publish_dir: 指定要发布的文件夹。
+          # 插件会将 rules/ 文件夹里的内容，推送到 gh-pages 分支的【根目录】。
+          publish_dir: ./rules
 
-          # 2. 【关键】先只添加实质性的数据文件 (JSON 和 Hash)
-          # 注意：不要添加 rules/merge_log.txt
-          git add rules/*.json rules/*.hash
+          # publish_branch: 推送到哪个分支，默认是 gh-pages
+          publish_branch: gh-pages
 
-          # 3. 检查暂存区是否有变更
-          if git diff --staged --quiet; then
-            echo "No rules changed. Skipping commit."
-            # 规则没变，Log 里的时间变了也没意义，直接结束，不提交
-          else
-            echo "Rules changed. Committing..."
-            
-            # 4. 规则确实变了，现在把 Log 也加入暂存区，作为本次变更的说明
-            git add rules/merge_log.txt
-            
-            # 5. 提交并推送
-            git commit -m "Auto-update rules [skip ci]"
-            git push
-          fi
+          # commit_message: 自定义提交信息
+          commit_message: "Auto-update rules ${{ github.sha }}"
+
+          # user_name / user_email: 设置提交机器人信息
+          user_name: "github-actions[bot]"
+          user_email: "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # force_orphan: (可选) 如果设为 true，每次都会把 gh-pages 分支清空重建，保持该分支只有 1 个 commit
+          # 如果你想保留历史记录（比如想看 log 历史），就设为 false (默认)
+          force_orphan: false
+
+      # - name: Commit and Push to Main
+      #   run: |
+      #     # 1. 配置 Git 用户
+      #     git config --global user.name "github-actions[bot]"
+      #     git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      #     # 2. 【关键】先只添加实质性的数据文件 (JSON 和 Hash)
+      #     # 注意：不要添加 rules/merge_log.txt
+      #     git add rules/*.json rules/*.hash
+
+      #     # 3. 检查暂存区是否有变更
+      #     if git diff --staged --quiet; then
+      #       echo "No rules changed. Skipping commit."
+      #       # 规则没变，Log 里的时间变了也没意义，直接结束，不提交
+      #     else
+      #       echo "Rules changed. Committing..."
+
+      #       # 4. 规则确实变了，现在把 Log 也加入暂存区，作为本次变更的说明
+      #       git add rules/merge_log.txt
+
+      #       # 5. 提交并推送
+      #       git commit -m "Auto-update rules [skip ci]"
+      #       git push
+      #     fi
