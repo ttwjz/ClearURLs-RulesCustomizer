@@ -46,6 +46,8 @@ jobs:
       - name: Build rules
         run: |
           python script/builder.py
+          # 将 main 分支准备好的 README 复制到输出目录，并重命名
+          cp GHPAGES_README.md rules/README.md
 
       # --- 新增步骤：智能回滚日志 ---
       - name: Check for changes and restore log if needed
