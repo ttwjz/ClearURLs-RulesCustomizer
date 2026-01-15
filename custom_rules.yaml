@@ -1,105 +1,116 @@
-# ==========================================
-# ClearURLs 自定义规则配置
-# ==========================================
+# ==============================================================================
+# ClearURLs 自定义规则配置文件
+# ==============================================================================
+#
+# 文档说明：
+# 1. 本文件用于生成 ClearURLs 插件所需的 rules.json。
+# 2. 脚本会自动合并上游规则 (Upstream) 和本文件中的自定义规则。
+# 3. 支持三种操作区域：del-providers (删), add-providers (增), modify-providers (改)。
+#
+# ------------------------------------------------------------------------------
+# 核心语法：参数值的写法
+# ------------------------------------------------------------------------------
+# 所有数组类型的字段 (如 rules, exceptions) 均支持列表、单文本块或混合的 "递归列表" 解析：
+# 文本块以 > 符号折叠换行开始，参数之间可用 "空格"、"换行" 或 "英文逗号" 分隔。
+# 1. 列表写法：
+#    rules:
+#      - param1
+#      - param2, 'param3'
+# 2. 文本块格式 (无注释):
+#    rules: >
+#      param1, param2, param3
+#
+# 2. 分组写法 (支持注释 - 推荐):
+#    rules:
+#      # 分组一说明
+#      - param1, param2
+#      # 分组二说明
+#      - >
+#        param3, param4
+#
+# ------------------------------------------------------------------------------
+# 核心语法：正则表达式的引号规则 (至关重要)
+# ------------------------------------------------------------------------------
+# 由于 JSON 和 YAML 对反斜杠 (\) 的转义处理不同，请遵循以下规则：
+#
+# 1. 【推荐】使用单引号 ('...') - 所见即所得 (Raw String)
+#    如果你是手写正则，请使用单引号。此时一个反斜杠就是一个反斜杠。
+#    示例: urlPattern: '^https?:\/\/example\.com'
+#
+# 2. 【兼容】使用双引号 ("...") - JSON 兼容模式 (Escaped String)
+#    如果你是从 rules.json 源文件中直接复制的正则（包含双重反斜杠 \\），请使用双引号。
+#    脚本会自动处理转义修复。
+#    示例: urlPattern: "^https?:\\/\\/example\\.com"
+#
+# ==============================================================================
 
-# ------------------------------------------
-# 1. 删除列表：这里的厂商会从原始规则中彻底移除
-# 格式举例：
-#
+# ------------------------------------------------------------------------------
+# 1. 删除列表 (Delete Providers)
+# ------------------------------------------------------------------------------
+# 作用：将指定厂商的规则从最终结果中彻底移除。
+# 格式：列表或空格分隔的字符串。
+# 示例:
 # del-providers: >
-#   A, B, C D
-#   E  F
-#
-# 可以使用 '-' 开头的标准列表，或原生 Flow Style [A, B, C]
-# 或使用折叠块 > , 可以以任意空格或换行或英文逗号 ',' 分隔参数值，下所有填写数组的位置相同
-# ------------------------------------------
+#   google, bing
+# ------------------------------------------------------------------------------
 del-providers: >
 
-# ------------------------------------------
-# 2. 新增列表：用于添加上游没有的规则
-# (注：如果这里写的规则在上游里其实已经存在，脚本会自动按修改逻辑合并，不会报错)
-# 支持的参数与原规则相同，允许只给出修改的参数，未给出的参数将填充默认值
-# 对于正则表达式，不使用转义时，请用单引号包裹
-# 使用转义时（如从json中直接复制），请用双引号包裹
-# 格式举例：
+# ------------------------------------------------------------------------------
+# 2. 新增列表 (Add Providers)
+# ------------------------------------------------------------------------------
+# 作用：添加上游不存在的新规则。
+# 逻辑：
+#   - 如果厂商不存在：创建新规则。
+#   - 如果厂商已存在：自动转为 "修改模式" (Merge)，追加参数。
 #
-# add-providers:
-#   google:
-#     urlPattern:                 # 单个正则表达式，必须填写
-#     completeProvider: True,     # bool，默认由脚本自动判断生成
-#     rules: [],                  # 数组，正则表达式，允许留空，默认留空
-#     referralMarketing: [],      # 数组，正则表达式，允许留空，默认留空
-#     rawRules: [],               # 数组，正则表达式，允许留空，默认留空
-#     exceptions: [],             # 数组，正则表达式，允许留空，默认留空
-#     redirections: [],           # 数组，正则表达式，允许留空，默认留空
-#     forceRedirection: False,    # bool，默认 False
-#
-#   baidu:
-#     urlPattern:
-#     rules:
-#       - "param1 param2"       # 一行写多个
-#       - param3                # 单个
-#       - >                     # 文本块
-#         param4, param5
-#         'param6'
-#
-# ------------------------------------------
+# 可用字段 (未填写的字段将使用默认值):
+#   urlPattern        : [必填] 匹配 URL 的正则表达式
+#   completeProvider  : [布尔] 是否为完整规则 (默认由脚本自动判断: 有规则为False, 无规则为True)
+#   forceRedirection  : [布尔] 是否强制重定向 (默认 False)
+#   rules             : [数组] 要清理的参数正则
+#   exceptions        : [数组] 例外 URL 正则
+#   rawRules          : [数组] 原始规则正则
+#   redirections      : [数组] 重定向规则正则
+#   referralMarketing : [数组] 营销参数正则
+# ------------------------------------------------------------------------------
 add-providers:
   baidu:
+    # 手写正则，使用单引号 (Raw 模式)
     urlPattern: '^https?:\/\/(?:[a-z0-9-]+\.)*?baidu(?:\.[a-z]{2,}){1,}'
-    # 分别是通用跟踪, rsv 跟踪, AJAX 参数
     rules: >
-      sa, usm, f, issp, bs, oq, fr,
+      # 通用跟踪
+      sa, usm, f, issp, bs, oq, fr, ie,
 
+      # RSV 系列
       '^rsv_.*'
 
+      # 其他参数
       inputT, newi, csrc, tfflag, ect, qid, fenlei, plan,
-      tn, ie, plan,
-      dyTabStr, lid, isid, prefixsug, mod, rsp, _ss, clist, hsug, f4s, csor, _cr1,
-      sugid, from, cqid, csq, ptsg, istc, ver, chk, isid,
-      srcid, group_class, pmgr_token, timestamp, signature,
-      prod, token, json, imod, sid, _t, hisdata, usegosug,
-      ch, bar, pre, p, sugsid
+      tn, dyTabStr, lid, isid, prefixsug, mod, rsp, _ss,
+      clist, hsug, f4s, csor, _cr1, sugid, from, cqid, csq,
+      ptsg, istc, ver, chk, srcid, group_class, pmgr_token,
+      timestamp, signature, prod, token, json, imod, sid,
+      _t, hisdata, usegosug, ch, bar, pre, p, sugsid
 
-# ------------------------------------------
-# 3. 修改列表：用于调整上游已有的规则
-# (注：如果这里写的规则在上游里其实不存在，脚本会自动按新增逻辑创建，不会报错)
-# 默认参数名表示追加模式，rst-前缀表示覆盖模式，del-前缀表示删除给出的值
-# 特别的，当 del-前缀，且值 = DELETE_ENTIRE_ARRAY 时，删除整个数组值
-# 格式举例：
+# ------------------------------------------------------------------------------
+# 3. 修改列表 (Modify Providers)
+# ------------------------------------------------------------------------------
+# 作用：修改或覆盖上游已有的规则。
+# 逻辑：
+#   - 如果厂商已存在：合并修改。
+#   - 如果厂商不存在：自动转为 "新增模式" (Create)。
 #
-# modify-providers:
-#   google:
-#     urlPattern:                 # 单个正则表达式，填写则覆盖
-#     completeProvider: True,     # bool，默认由脚本自动判断生成，覆盖，
-#     rules: [],                  # 数组，正则表达式，允许留空，默认留空，追加
-#     del-rules: [],              # 数组，正则表达式，允许留空，默认留空，删除
-#     rst-rules: [],              # 数组，正则表达式，允许留空，默认留空，覆盖
-#     referralMarketing: [],      # 数组，正则表达式，允许留空，默认留空，追加
-#     del-referralMarketing: [],  # 数组，正则表达式，允许留空，默认留空，删除
-#     rst-referralMarketing: [],  # 数组，正则表达式，允许留空，默认留空，覆盖
-#     rawRules: [],               # 数组，正则表达式，允许留空，默认留空，追加
-#     del-rawRules: [],           # 数组，正则表达式，允许留空，默认留空，删除
-#     rst-rawRules: [],           # 数组，正则表达式，允许留空，默认留空，覆盖
-#     exceptions: [],             # 数组，正则表达式，允许留空，默认留空，追加
-#     del-exceptions: [],         # 数组，正则表达式，允许留空，默认留空，删除
-#     rst-exceptions: [],         # 数组，正则表达式，允许留空，默认留空，覆盖
-#     redirections: [],           # 数组，正则表达式，允许留空，默认留空，追加
-#     del-redirections: [],       # 数组，正则表达式，允许留空，默认留空，删除
-#     rst-redirections: [],       # 数组，正则表达式，允许留空，默认留空，覆盖
-#     forceRedirection: False,    # bool，默认 False，覆盖
-#
-#   baidu:
-#     urlPattern:
-#     rules: >
-#       sa, usm, f, issp, bs, oq, fr
-#     del-rules: >
-#       tbs
-#
-# ------------------------------------------
+# 操作前缀说明 (适用于所有数组字段):
+#   (无前缀) : 追加模式 (Append)。将新值加入数组 (自动去重)。
+#   del-     : 删除模式 (Remove)。从原数组中移除指定值。
+#              * 特殊值: "DELETE_ENTIRE_ARRAY" 可清空整个数组。
+#   rst-     : 覆盖模式 (Reset)。忽略原内容，直接用新值覆盖整个数组。
+# ------------------------------------------------------------------------------
 modify-providers:
   bing:
-    urlPattern: '^https?:\\/\\/(?:[a-z0-9-]+\\.)*?bing(?:\\.[a-z]{2,}){1,}'
+    # 假设这是从 JSON 复制的正则(带双反斜杠)，使用双引号
+    urlPattern: "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?bing(?:\\.[a-z]{2,}){1,}"
+    # 追加以下参数到原有规则中
     rules: >
       cvid, form, pq, sc, qs, sp, ghc, sk, lq,
       go, ans, refig, plvar, pc,
@@ -107,9 +118,18 @@ modify-providers:
       PC, adppc, FORM, qpvt, CREA, search, FPIG, pglt
 
   google:
-    urlPattern: '^https?:\\/\\/(?:[a-z0-9-]+\\.)*?google(?:\\.[a-z]{2,}){1,}'
+    # 假设这是从 JSON 复制的正则(带双反斜杠)，使用双引号
+    urlPattern: "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?google(?:\\.[a-z]{2,}){1,}"
+    # 追加参数
     rules: >
       gws_rd, client, sxsrf, ei, ved, uact, fbs,
       sclient, biw, bih, gs_lcp, sxsrf, gs_rfai,
       newwindow, sca_esv, oq, gs_lp, source, iflsig,
       sa, aic, cshid
+
+    # 示例：如果你想从 Google 规则中删除 'ved' 参数，可以取消注释下行：
+    # del-rules: ved
+
+  # 示例：全删模式
+  # amazon:
+  #   del-rules: "DELETE_ENTIRE_ARRAY"
