@@ -81,25 +81,39 @@ def ensure_dir(directory):
         os.makedirs(directory)
 
 
-def fix_regex_string(val):
-    """
-    核心修复：解决 YAML 中双反斜杠被识别为两个字符的问题。
-    将 YAML 里的 '\\' (两个字符) 还原为 '\' (一个字符)。
-    这样 JSON dump 时会把它转义回 '\\'，而不是 '\\\\'。
-    """
-    if isinstance(val, str):
-        return val.replace("\\\\", "\\")
-    return val
-
-
 def normalize_to_list(value):
+    """
+    递归处理输入，支持 列表 和 字符串 的混合嵌套。
+    1. 字符串：按逗号/空格切分 -> 处理引号 -> 返回列表
+    2. 列表：遍历每一项递归调用 -> 展平结果
+    """
+    final_items = []
+
+    # 情况 A: 字符串 (执行切分和清洗)
     if isinstance(value, str):
-        items = value.replace(",", " ").split()
-        # 去引号 + 修复双重转义
-        return [fix_regex_string(item.strip("\"'")) for item in items]
+        # 1. 替换逗号为空格并切分
+        raw_items = value.replace(",", " ").split()
+
+        for item in raw_items:
+            # 2. 根据引号类型处理
+            if item.startswith("'") and item.endswith("'"):
+                # 单引号：去引号，内容保留原样
+                final_items.append(item[1:-1])
+            elif item.startswith('"') and item.endswith('"'):
+                # 双引号：去引号，处理 JSON 风格的反斜杠转义
+                content = item[1:-1]
+                final_items.append(content.replace("\\\\", "\\").replace('\\"', '"'))
+            else:
+                # 无引号
+                final_items.append(item)
+        return final_items
+
+    # 情况 B: 列表 (递归处理每一项)
     if isinstance(value, list):
-        # 列表里的项也要修复
-        return [fix_regex_string(item) for item in value]
+        for sub_item in value:
+            final_items.extend(normalize_to_list(sub_item))
+        return final_items
+
     return []
 
 
@@ -203,19 +217,19 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
         is_array = False
         target_field_name = field
 
-        # 判断是否为数组操作
+        # 判断是否为数组操作 (rst-, del-, 或标准字段)
         if field.startswith("rst-"):
             target_field_name = field[4:]
             if target_field_name in ARRAY_FIELDS:
-                value_list = normalize_to_list(value)
+                value_list = normalize_to_list(value)  # 递归处理
                 is_array = True
         elif field.startswith("del-"):
             target_field_name = field[4:]
             if target_field_name in ARRAY_FIELDS:
-                value_list = normalize_to_list(value)
+                value_list = normalize_to_list(value)  # 递归处理
                 is_array = True
         elif field in ARRAY_FIELDS:
-            value_list = normalize_to_list(value)
+            value_list = normalize_to_list(value)  # 递归处理
             is_array = True
 
         # 逻辑处理
@@ -223,8 +237,7 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
             if is_array:
                 target[target_field_name] = sorted(list(set(value_list)))
             else:
-                # 标量覆盖 (如 rst-urlPattern，也要修复转义)
-                target[target_field_name] = fix_regex_string(value)
+                target[target_field_name] = value  # 标量，Yaml加载时已处理转义
 
         elif field.startswith("del-"):
             if is_array:
@@ -254,8 +267,8 @@ def upsert_provider(providers, name, patch_data, section_name, logger):
             target[field] = sorted(list(new_set))
 
         else:
-            # 标量覆盖 (urlPattern 等)，应用转义修复
-            target[field] = fix_regex_string(value)
+            # 标量字段 (如 urlPattern)
+            target[field] = value
 
     if "completeProvider" not in patch_data:
         has_rules = any(len(target.get(f, [])) > 0 for f in RULE_FIELDS)
