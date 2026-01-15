@@ -90,7 +90,8 @@ add-providers:
       clist, hsug, f4s, csor, _cr1, sugid, from, cqid, csq,
       ptsg, istc, ver, chk, srcid, group_class, pmgr_token,
       timestamp, signature, prod, token, json, imod, sid,
-      _t, hisdata, usegosug, ch, bar, pre, p, sugsid
+      _t, hisdata, usegosug, ch, bar, pre, p, sugsid, his,
+      sugmode, hot_launch, cb, _, pwd
 
 # ------------------------------------------------------------------------------
 # 3. 修改列表 (Modify Providers)
@@ -115,7 +116,8 @@ modify-providers:
       cvid, form, pq, sc, qs, sp, ghc, sk, lq,
       go, ans, refig, plvar, pc,
       setmkt, cc, ld, ssd, sid, muid, muidb,
-      PC, adppc, FORM, qpvt, CREA, search, FPIG, pglt
+      PC, adppc, FORM, qpvt, CREA, search, FPIG, pglt,
+      ajf
 
   google:
     # 假设这是从 JSON 复制的正则(带双反斜杠)，使用双引号
