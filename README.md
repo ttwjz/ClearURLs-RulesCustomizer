@@ -6,9 +6,9 @@
 
 **ClearURLs-RulesCustomizer** 是一个用于自动化构建 [ClearURLs](https://gitlab.com/ClearURLs/ClearURLs) 扩展规则的工具。
 
-本项目以 ClearURLs 官方的上游规则为基准，通过 GitHub Actions 每日自动同步，并合并本地维护的 `custom_rules.yaml`，最终生成适用于插件的增强版规则 `rules.min.json` 及其校验哈希。
+本项目以 ClearURLs 官方的上游规则为基准，通过 GitHub Actions 每日自动同步，并合并本地维护的 `custom_rules.yaml`，最终生成适用于插件的增强版规则 `rules.minify.json` 及其校验哈希。
 
-> 🌏 **特别说明**：本仓库默认维护了一份**适用于中国🇨🇳用户的增强规则**，针对 **Baidu (百度)**、**Bing CN (必应中国)**、**Sogou (搜狗)** 等国内常用网站进行了深度的参数清理优化。
+> 🌏 **特别说明**：本仓库默认维护了一份**适用于中国🇨🇳用户的增强规则**，针对 **Baidu (百度)**、**Bing CN (必应中国)**、**Sogou (搜狗)** 等国内常用网站进行了深度的参数清理优化。构建的规则文件自动发布至 **gh-pages** 分支。
 
 ---
 
@@ -21,11 +21,11 @@
 
 *   **data.json 档的网址 (规则)** :
     ```text
-    https://ttwjz.github.io/ClearURLs-RulesCustomizer/rules.min.json
+    https://ttwjz.github.io/ClearURLs-RulesCustomizer/rules.minify.json
     ```
 *   **rules.hash 档的网址 (校验)** :
     ```text
-    https://ttwjz.github.io/ClearURLs-RulesCustomizer/rules.min.hash
+    https://ttwjz.github.io/ClearURLs-RulesCustomizer/rules.minify.hash
     ```
 4.  点击 **"储存并重启插件"**。
 
@@ -46,8 +46,7 @@
 
 ## 🛠️ 如何维护/贡献规则
 
-本项目核心配置文件为 `custom_rules.yaml`。我们非常欢迎你提交 Pull Request 来完善国内网站的规则！
-
+本项目核心配置文件为 `custom_rules.yaml`。我们非常欢迎你提交 Pull Request 来完善国内网站的规则！  
 本仓库源码位于 `main` 分支，构建产物自动发布至 `gh-pages` 分支。
 请直接在 `main` 分支提交 `custom_rules.yaml` 文件修改。
 
@@ -63,6 +62,8 @@
 
 ### `custom_rules.yaml` 编写指南
 
+自定义规则的参数字段与值与 ClearURLs 官方保持一致，
+详细说明请参考 [ClearURLs 规则目录](https://docs.clearurls.xyz/1.27.3/specs/rules/) 。
 配置文件支持 **Add (增)**、**Modify (改)**、**Delete (删)** 三种模式，详细语法请参考文件内的注释。
 
 #### 1. 新增规则 (add-providers)

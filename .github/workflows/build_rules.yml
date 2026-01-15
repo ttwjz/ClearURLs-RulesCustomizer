@@ -61,11 +61,11 @@ jobs:
             echo "Comparing generated hash with deployed hash..."
 
             # 读取本地新生成的 hash
-            NEW_HASH=$(cat rules/rules.min.hash)
+            NEW_HASH=$(cat rules/rules.minify.hash)
             
             # 读取远程 gh-pages 分支根目录下的 hash 文件
             # 注意：文件在远程是位于根目录的
-            OLD_HASH=$(git show origin/gh-pages:rules.min.hash 2>/dev/null || echo "none")
+            OLD_HASH=$(git show origin/gh-pages:rules.minify.hash 2>/dev/null || echo "none")
 
             echo "Local Hash:  $NEW_HASH"
             echo "Remote Hash: $OLD_HASH"
@@ -104,27 +104,3 @@ jobs:
           # 如果你想保留历史记录（比如想看 log 历史），就设为 false (默认)
           force_orphan: false
 
-      # - name: Commit and Push to Main
-      #   run: |
-      #     # 1. 配置 Git 用户
-      #     git config --global user.name "github-actions[bot]"
-      #     git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      #     # 2. 【关键】先只添加实质性的数据文件 (JSON 和 Hash)
-      #     # 注意：不要添加 rules/merge_log.txt
-      #     git add rules/*.json rules/*.hash
-
-      #     # 3. 检查暂存区是否有变更
-      #     if git diff --staged --quiet; then
-      #       echo "No rules changed. Skipping commit."
-      #       # 规则没变，Log 里的时间变了也没意义，直接结束，不提交
-      #     else
-      #       echo "Rules changed. Committing..."
-
-      #       # 4. 规则确实变了，现在把 Log 也加入暂存区，作为本次变更的说明
-      #       git add rules/merge_log.txt
-
-      #       # 5. 提交并推送
-      #       git commit -m "Auto-update rules [skip ci]"
-      #       git push
-      #     fi

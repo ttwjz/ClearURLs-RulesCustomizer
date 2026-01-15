@@ -24,9 +24,9 @@ OUTPUT_FILE = os.path.join(
     OUTPUT_DIR, "merged_rules.json"
 )  # 合并后的规则 (Pretty, 人类可读)
 MINIFIED_FILE = os.path.join(
-    OUTPUT_DIR, "rules.min.json"
+    OUTPUT_DIR, "rules.minify.json"
 )  # 最终产物 (Minified, 插件使用)
-MINIFIED_HASH_FILE = os.path.join(OUTPUT_DIR, "rules.min.hash")  # 最终产物的 Hash
+MINIFIED_HASH_FILE = os.path.join(OUTPUT_DIR, "rules.minify.hash")  # 最终产物的 Hash
 BADGE_FILE = os.path.join(OUTPUT_DIR, "badge.json")  # 日期徽章文件
 LOG_FILE = os.path.join(OUTPUT_DIR, "merge_log.txt")  # 构建日志
 CUSTOM_FILE = "custom_rules.yaml"  # 自定义规则配置文件
@@ -438,7 +438,7 @@ def save_output(data, logger):
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
-    # 2. 生成并保存 rules.min.json (Minified)
+    # 2. 生成并保存 rules.minify.json (Minified)
     logger.log("[-] Generating minified rules...")
     minified_data = minify_data(data)
 
@@ -449,7 +449,7 @@ def save_output(data, logger):
             minified_data, f, indent=None, separators=(",", ":"), ensure_ascii=False
         )
 
-    # 3. 计算并保存 rules.min.hash (SHA256)
+    # 3. 计算并保存 rules.minify.hash (SHA256)
     logger.log(f"[-] Calculating hash for {MINIFIED_FILE}...")
     with open(MINIFIED_FILE, "rb") as f:
         content_bytes = f.read()

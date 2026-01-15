@@ -5,7 +5,9 @@
 # 文档说明：
 # 1. 本文件用于生成 ClearURLs 插件所需的 rules.json。
 # 2. 脚本会自动合并上游规则 (Upstream) 和本文件中的自定义规则。
-# 3. 支持三种操作区域：del-providers (删), add-providers (增), modify-providers (改)。
+# 3. 自定义规则的参数字段与值与 ClearURLs 官方保持一致，详细说明请参考
+#    [ClearURLs 规则目录](https://docs.clearurls.xyz/1.27.3/specs/rules/) 。
+# 4. 支持三种操作区域：del-providers (删), add-providers (增), modify-providers (改)。
 #
 # ------------------------------------------------------------------------------
 # 核心语法：参数值的写法
