@@ -77,21 +77,24 @@ add-providers:
   baidu:
     # 手写正则，使用单引号 (Raw 模式)
     urlPattern: '^https?:\/\/(?:[a-z0-9-]+\.)*?baidu(?:\.[a-z]{2,}){1,}'
+    rules:
+      - sa, usm, f, issp, bs, oq, fr, ie
+      # 通用跟踪参数
+      - "^rsv_.*"
+      - >
+        inputT, newi, csrc, tfflag, ect, qid, fenlei, plan,
+        tn, dyTabStr, lid, isid, prefixsug, mod, rsp, _ss,
+        clist, hsug, f4s, csor, _cr1, sugid, from, cqid, csq,
+        ptsg, istc, ver, chk, srcid, group_class, pmgr_token,
+        timestamp, signature, prod, token, json, imod, sid,
+        _t, hisdata, usegosug, ch, bar, pre, p, sugsid, his,
+        sugmode, hot_launch, cb, _, pwd
+
+  sogou:
+    urlPattern: '^https?:\/\/(?:[a-z0-9-]+\.)*?sogou(?:\.[a-z]{2,}){1,}'
     rules: >
-      # 通用跟踪
-      sa, usm, f, issp, bs, oq, fr, ie,
-
-      # RSV 系列
-      '^rsv_.*'
-
-      # 其他参数
-      inputT, newi, csrc, tfflag, ect, qid, fenlei, plan,
-      tn, dyTabStr, lid, isid, prefixsug, mod, rsp, _ss,
-      clist, hsug, f4s, csor, _cr1, sugid, from, cqid, csq,
-      ptsg, istc, ver, chk, srcid, group_class, pmgr_token,
-      timestamp, signature, prod, token, json, imod, sid,
-      _t, hisdata, usegosug, ch, bar, pre, p, sugsid, his,
-      sugmode, hot_launch, cb, _, pwd
+      _asf, _ast, w, p, dp, ie, from, sourceid, sessiontime, cid,
+      user_ip, bh, hintidx, interation, htdbg, ajax, interV
 
 # ------------------------------------------------------------------------------
 # 3. 修改列表 (Modify Providers)
@@ -127,7 +130,7 @@ modify-providers:
       gws_rd, client, sxsrf, ei, ved, uact, fbs,
       sclient, biw, bih, gs_lcp, sxsrf, gs_rfai,
       newwindow, sca_esv, oq, gs_lp, source, iflsig,
-      sa, aic, cshid
+      sa, aic, cshid, sstk
 
     # 示例：如果你想从 Google 规则中删除 'ved' 参数，可以取消注释下行：
     # del-rules: ved
