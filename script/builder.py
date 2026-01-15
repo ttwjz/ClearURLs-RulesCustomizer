@@ -415,8 +415,8 @@ def minify_data(data):
 
 def generate_badge(logger):
     """生成 Shields.io Endpoint 专用的 JSON"""
-    # 获取当前北京时间 YYYY-MM-DD
-    now_date = datetime.now(CN_TZ).strftime("%Y-%m-%d")
+    # 获取当前北京时间 YYYY-MM-DD HH:MM:SS
+    now_date = datetime.now(CN_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
     badge_data = {
         "schemaVersion": 1,
