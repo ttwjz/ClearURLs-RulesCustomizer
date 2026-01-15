@@ -11,8 +11,8 @@
 
 | 文件用途 | 文件名 | **在线链接 (填入插件)** |
 | :--- | :--- | :--- |
-| **规则文件** | `rules.min.json` | `https://ttwjz.github.io/ClearURLs-RulesCustomizer/rules.min.json` |
-| **校验文件** | `rules.min.hash` | `https://ttwjz.github.io/ClearURLs-RulesCustomizer/rules.min.hash` |
+| **规则文件** | `rules.minify.json` | `https://ttwjz.github.io/ClearURLs-RulesCustomizer/rules.minify.json` |
+| **校验文件** | `rules.minify.hash` | `https://ttwjz.github.io/ClearURLs-RulesCustomizer/rules.minify.hash` |
 
 ## 🔍 其他文件
 
