@@ -47,6 +47,38 @@ jobs:
         run: |
           python script/builder.py
 
+      # --- 新增步骤：智能回滚日志 ---
+      - name: Check for changes and restore log if needed
+        shell: bash
+        run: |
+          # 1. 获取 gh-pages 分支的最新状态 (忽略错误，因为第一次运行时分支可能不存在)
+          git fetch origin gh-pages --depth=1 || true
+
+          # 2. 检查分支是否存在
+          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
+            echo "Comparing generated hash with deployed hash..."
+
+            # 读取本地新生成的 hash
+            NEW_HASH=$(cat rules/rules.min.hash)
+            
+            # 读取远程 gh-pages 分支根目录下的 hash 文件
+            # 注意：文件在远程是位于根目录的
+            OLD_HASH=$(git show origin/gh-pages:rules.min.hash 2>/dev/null || echo "none")
+
+            echo "Local Hash:  $NEW_HASH"
+            echo "Remote Hash: $OLD_HASH"
+
+            if [ "$NEW_HASH" == "$OLD_HASH" ]; then
+              echo "✅ Rules are identical. Restoring old log to prevent Git commit."
+              # 从远程读取旧日志，覆盖本地的新日志
+              git show origin/gh-pages:merge_log.txt > rules/merge_log.txt
+            else
+              echo "🚀 Rules have changed. Keeping new log for commit."
+            fi
+          else
+            echo "Branch gh-pages does not exist yet. Skipping comparison."
+          fi
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
