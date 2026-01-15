@@ -27,6 +27,7 @@ MINIFIED_FILE = os.path.join(
     OUTPUT_DIR, "rules.min.json"
 )  # 最终产物 (Minified, 插件使用)
 MINIFIED_HASH_FILE = os.path.join(OUTPUT_DIR, "rules.min.hash")  # 最终产物的 Hash
+BADGE_FILE = os.path.join(OUTPUT_DIR, "badge.json")  # 日期徽章文件
 LOG_FILE = os.path.join(OUTPUT_DIR, "merge_log.txt")  # 构建日志
 CUSTOM_FILE = "custom_rules.yaml"  # 自定义规则配置文件
 
@@ -412,6 +413,24 @@ def minify_data(data):
     return {"providers": minified_providers}
 
 
+def generate_badge(logger):
+    """生成 Shields.io Endpoint 专用的 JSON"""
+    # 获取当前北京时间 YYYY-MM-DD
+    now_date = datetime.now(CN_TZ).strftime("%Y-%m-%d")
+
+    badge_data = {
+        "schemaVersion": 1,
+        "label": "Rules Updated",  # 徽章左边的文字
+        "message": now_date,  # 徽章右边的文字 (日期)
+        "color": "brightgreen",  # 颜色
+        "cacheSeconds": 3600,  # 缓存时间
+    }
+
+    logger.log(f"[-] Generating badge json to {BADGE_FILE}...")
+    with open(BADGE_FILE, "w", encoding="utf-8") as f:
+        json.dump(badge_data, f, indent=None, ensure_ascii=False)
+
+
 def save_output(data, logger):
     """保存所有输出文件"""
     # 1. 保存 merged_rules.json (Pretty)
@@ -439,6 +458,9 @@ def save_output(data, logger):
     logger.log(f"[-] Saving hash ({file_hash}) to {MINIFIED_HASH_FILE}...")
     with open(MINIFIED_HASH_FILE, "w", encoding="utf-8") as f:
         f.write(file_hash)
+
+    # 4. 生成徽章文件 badge.json
+    generate_badge(logger)
 
 
 # ==============================================================================
