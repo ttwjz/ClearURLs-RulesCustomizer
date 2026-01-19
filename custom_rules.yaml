@@ -114,8 +114,8 @@ add-providers:
 # ------------------------------------------------------------------------------
 modify-providers:
   bing:
-    # 假设这是从 JSON 复制的正则(带双反斜杠)，使用双引号
-    urlPattern: "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?bing(?:\\.[a-z]{2,}){1,}"
+    # 如果这是从 JSON 复制的正则(带双反斜杠)，使用双引号
+    # urlPattern: "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?bing(?:\\.[a-z]{2,}){1,}"
     # 追加以下参数到原有规则中
     rules: >
       cvid, form, pq, sc, qs, sp, ghc, sk, lq,
@@ -125,17 +125,23 @@ modify-providers:
       ajf
 
   google:
-    # 假设这是从 JSON 复制的正则(带双反斜杠)，使用双引号
-    urlPattern: "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?google(?:\\.[a-z]{2,}){1,}"
     # 追加参数
     rules: >
-      gws_rd, client, sxsrf, ei, ved, uact, fbs,
+      gws_rd, client, ei, ved, uact, fbs,
       sclient, biw, bih, gs_lcp, sxsrf, gs_rfai,
       newwindow, sca_esv, oq, gs_lp, source, iflsig,
       sa, aic, cshid, sstk
 
     # 示例：如果你想从 Google 规则中删除 'ved' 参数，可以取消注释下行：
     # del-rules: ved
+
+  bilibili.com:
+    rules: >
+      trackid
+
+  live.bilibili.com:
+    rules: >
+      live_from, trackid, launch_id, hotRank
 
   # 示例：全删模式
   # amazon:
