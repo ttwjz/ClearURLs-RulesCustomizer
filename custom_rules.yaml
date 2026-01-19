@@ -98,6 +98,24 @@ add-providers:
       _asf, _ast, w, p, dp, ie, from, sourceid, sessiontime, cid,
       user_ip, bh, hintidx, interation, htdbg, ajax, interV
 
+  wechat:
+    urlPattern: '^https?:\/\/(?:mp|weixin|wx)\.qq\.com'
+    rules: >
+      "poc_token", "from", "scene", "src", "share",
+      "sharefrom", "sharer_sharetime", "sharer_shareid", "key",
+      "clicktime", "enterid", "devicetype", "version",
+      "lang", "nettype", "ascene", "sessionid",
+      "pass_ticket", "exportkey", "wx_header", "wx_share",
+      "wxshare", "isappinstalled", "dt_dapp", "dt_platform",
+      "dt_tag", "dt_id", "chksm", "uin", "code", "state"
+    referralMarketing: >
+      from, scene, sharefrom, src
+    exceptions:
+      - "^https?:\\/\\/mp\\.weixin\\.qq\\.com\\/cgi-bin\\/"
+      - "^https?:\\/\\/mp\\.weixin\\.qq\\.com\\/mp\\/profile_ext\\?"
+      - "^https?:\\/\\/mp\\.weixin\\.qq\\.com\\/s\\?__biz="
+      - "^https?:\\/\\/mp\\.weixin\\.qq\\.com\\/mp\\/appmsg_show"
+
 # ------------------------------------------------------------------------------
 # 3. 修改列表 (Modify Providers)
 # ------------------------------------------------------------------------------
