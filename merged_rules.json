@@ -104,12 +104,14 @@
             "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?fls-na\\.amazon(?:\\.[a-z]{2,}){1,}"
         },
         "google": {
-            "forceRedirection": true,
+            "forceRedirection": false,
             "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?google(?:\\.[a-z]{2,}){1,}",
             "rules": [
                 "_u",
+                "aep",
                 "aic",
                 "aqs",
+                "atvm",
                 "atyp",
                 "bi[a-z]*",
                 "bih",
@@ -119,8 +121,8 @@
                 "cd",
                 "client",
                 "cshid",
+                "csuir",
                 "dcr",
-                "dpr",
                 "ei",
                 "esrc",
                 "fbs",
@@ -136,6 +138,7 @@
                 "ie",
                 "iflsig",
                 "je",
+                "mstk",
                 "newwindow",
                 "oq",
                 "pcampaignid",
@@ -1189,33 +1192,34 @@
         "bilibili.com": {
             "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?bilibili\\.com",
             "rules": [
+                "buvid",
                 "callback",
-                "spm_id_from",
-                "from_source",
                 "from",
-                "seid",
+                "from_source",
+                "is_story_h5",
                 "mid",
-                "share_source",
                 "msource",
+                "plat_id",
                 "refer_from",
+                "seid",
                 "share_from",
                 "share_medium",
-                "share_source",
                 "share_plat",
-                "share_tag",
                 "share_session_id",
+                "share_source",
+                "share_tag",
+                "spm_id_from",
                 "timestamp",
+                "trackid",
                 "unique_k",
-                "vd_source",
-                "plat_id",
-                "buvid",
-                "is_story_h5",
-                "up_id"
+                "up_id",
+                "vd_source"
             ],
             "exceptions": [
                 "^https?:\\/\\/api\\.bilibili\\.com",
                 "^https?:\\/\\/space\\.bilibili\\.com"
-            ]
+            ],
+            "completeProvider": false
         },
         "space.bilibili.com": {
             "urlPattern": "^https?:\\/\\/space\\.bilibili\\.com",
@@ -1233,11 +1237,16 @@
         "live.bilibili.com": {
             "urlPattern": "^https?:\\/\\/live\\.bilibili\\.com",
             "rules": [
-                "visit_id",
-                "session_id",
                 "broadcast_type",
-                "is_room_feed"
-            ]
+                "hotRank",
+                "is_room_feed",
+                "launch_id",
+                "live_from",
+                "session_id",
+                "trackid",
+                "visit_id"
+            ],
+            "completeProvider": false
         },
         "marketscreener.com": {
             "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?marketscreener\\.com",
@@ -2106,6 +2115,58 @@
             "referralMarketing": [],
             "rawRules": [],
             "exceptions": [],
+            "redirections": [],
+            "forceRedirection": false
+        },
+        "wechat": {
+            "urlPattern": "^https?:\\/\\/(?:mp|weixin|wx)\\.qq\\.com",
+            "completeProvider": false,
+            "rules": [
+                "ascene",
+                "chksm",
+                "clicktime",
+                "code",
+                "devicetype",
+                "dt_dapp",
+                "dt_id",
+                "dt_platform",
+                "dt_tag",
+                "enterid",
+                "exportkey",
+                "from",
+                "isappinstalled",
+                "key",
+                "lang",
+                "nettype",
+                "pass_ticket",
+                "poc_token",
+                "scene",
+                "sessionid",
+                "share",
+                "sharefrom",
+                "sharer_shareid",
+                "sharer_sharetime",
+                "src",
+                "state",
+                "uin",
+                "version",
+                "wx_header",
+                "wx_share",
+                "wxshare"
+            ],
+            "referralMarketing": [
+                "from",
+                "scene",
+                "sharefrom",
+                "src"
+            ],
+            "rawRules": [],
+            "exceptions": [
+                "^https?:\\/\\/mp\\.weixin\\.qq\\.com\\/cgi-bin\\/",
+                "^https?:\\/\\/mp\\.weixin\\.qq\\.com\\/mp\\/appmsg_show",
+                "^https?:\\/\\/mp\\.weixin\\.qq\\.com\\/mp\\/profile_ext\\?",
+                "^https?:\\/\\/mp\\.weixin\\.qq\\.com\\/s\\?__biz="
+            ],
             "redirections": [],
             "forceRedirection": false
         }
