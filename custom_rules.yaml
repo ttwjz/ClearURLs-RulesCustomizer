@@ -145,13 +145,11 @@ modify-providers:
   google:
     # 追加参数
     rules: >
-      gws_rd, client, ei, ved, uact, fbs,
-      sclient, biw, bih, gs_lcp, sxsrf, gs_rfai,
-      newwindow, sca_esv, oq, gs_lp, source, iflsig,
+      client, ved, uact, fbs,
+      sclient, biw, bih, sxsrf,
+      newwindow, oq, source, iflsig,
       sa, aic, cshid, sstk
-
-    # 示例：如果你想从 Google 规则中删除 'ved' 参数，可以取消注释下行：
-    # del-rules: ved
+    del-rules: dpr, ei
 
   bilibili.com:
     rules: >
