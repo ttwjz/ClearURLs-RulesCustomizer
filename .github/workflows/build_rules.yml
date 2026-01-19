@@ -74,6 +74,7 @@ jobs:
               echo "✅ Rules are identical. Restoring old log to prevent Git commit."
               # 从远程读取旧日志，覆盖本地的新日志
               git show origin/gh-pages:merge_log.txt > rules/merge_log.txt
+              git show origin/gh-pages:badge.json > rules/badge.json
             else
               echo "🚀 Rules have changed. Keeping new log for commit."
             fi
