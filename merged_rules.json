@@ -104,7 +104,7 @@
             "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?fls-na\\.amazon(?:\\.[a-z]{2,}){1,}"
         },
         "google": {
-            "forceRedirection": true,
+            "forceRedirection": false,
             "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?google(?:\\.[a-z]{2,}){1,}",
             "rules": [
                 "_u",
