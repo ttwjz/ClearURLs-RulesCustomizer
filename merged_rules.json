@@ -2109,7 +2109,7 @@
             "forceRedirection": false
         },
         "wechat": {
-            "urlPattern": "^https?:\\/\\/(?:mp|weixin|wx)\\.qq\\.com",
+            "urlPattern": "^https?:\\/\\/(?:mp(?:\\.weixin)?|weixin|wx)\\.qq\\.com",
             "completeProvider": false,
             "rules": [
                 "ascene",
