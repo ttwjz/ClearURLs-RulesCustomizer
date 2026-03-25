@@ -2007,6 +2007,14 @@
                 "^https?:\\/\\/redirect\\.viglink\\.com\\/.*?u=([^&]+)"
             ]
         },
+        "nordwolle.com": {
+            "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?nordwolle\\.com",
+            "rules": [
+                "_sc",
+                "_sid",
+                "_ss"
+            ]
+        },
         "baidu": {
             "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?baidu(?:\\.[a-z]{2,}){1,}",
             "completeProvider": false,
