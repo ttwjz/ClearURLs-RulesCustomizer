@@ -2115,58 +2115,6 @@
             "exceptions": [],
             "redirections": [],
             "forceRedirection": false
-        },
-        "wechat": {
-            "urlPattern": "^https?:\\/\\/(?:mp(?:\\.weixin)?|weixin|wx)\\.qq\\.com",
-            "completeProvider": false,
-            "rules": [
-                "ascene",
-                "chksm",
-                "clicktime",
-                "code",
-                "devicetype",
-                "dt_dapp",
-                "dt_id",
-                "dt_platform",
-                "dt_tag",
-                "enterid",
-                "exportkey",
-                "from",
-                "isappinstalled",
-                "key",
-                "lang",
-                "nettype",
-                "pass_ticket",
-                "poc_token",
-                "scene",
-                "sessionid",
-                "share",
-                "sharefrom",
-                "sharer_shareid",
-                "sharer_sharetime",
-                "src",
-                "state",
-                "uin",
-                "version",
-                "wx_header",
-                "wx_share",
-                "wxshare"
-            ],
-            "referralMarketing": [
-                "from",
-                "scene",
-                "sharefrom",
-                "src"
-            ],
-            "rawRules": [],
-            "exceptions": [
-                "^https?:\\/\\/mp\\.weixin\\.qq\\.com\\/cgi-bin\\/",
-                "^https?:\\/\\/mp\\.weixin\\.qq\\.com\\/mp\\/appmsg_show",
-                "^https?:\\/\\/mp\\.weixin\\.qq\\.com\\/mp\\/profile_ext\\?",
-                "^https?:\\/\\/mp\\.weixin\\.qq\\.com\\/s\\?__biz="
-            ],
-            "redirections": [],
-            "forceRedirection": false
         }
     }
 }

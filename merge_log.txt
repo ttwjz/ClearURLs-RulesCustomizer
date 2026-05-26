@@ -1,9 +1,9 @@
 ========================================
          ClearURLs Merge Log
 ========================================
-Execution Time   : 2026-03-26 06:30:04 (CST)
+Execution Time   : 2026-05-26 15:58:29 (CST)
 Upstream Modified: 2026-03-25 22:13:14
-Custom Modified  : 2026-03-26 06:29:56
+Custom Modified  : 2026-05-26 15:58:23
 ----------------------------------------
 
 [-] Fetching upstream from https://rules2.clearurls.xyz/data.minify.json...
@@ -14,7 +14,6 @@ Custom Modified  : 2026-03-26 06:29:56
 [-] Processing rules...
     [Create] baidu
     [Create] sogou
-    [Create] wechat
     [Modify] bing
         [Info] 'bing' (rules): Skipped duplicates ['cvid', 'sc', 'qs', 'sp', 'sk']
     [Modify] google
@@ -25,5 +24,5 @@ Custom Modified  : 2026-03-26 06:29:56
 [-] Generating minified rules...
 [-] Saving minified rules to rules/rules.minify.json...
 [-] Calculating hash for rules/rules.minify.json...
-[-] Saving hash (48effb665e7b9991848ab398b6b3c6b27bb197cb556d6a64fb95e46e68a693e8) to rules/rules.minify.hash...
+[-] Saving hash (72edb227834191747b6b86d25a6a7f7f48f260367151ac9e7795b8dac026d251) to rules/rules.minify.hash...
 [-] Generating badge json to rules/badge.json...
